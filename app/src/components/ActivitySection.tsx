@@ -1,12 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { RotatingTextRing } from './RotatingTextRing';
 import { ContributionGrid } from './ContributionGrid';
 import type { ContributionGridTheme } from './ContributionGrid';
 import { hapticLight } from '../utils/haptics';
-import PlayIcon from '../../assets/icons/play.svg';
-import PlusIcon from '../../assets/icons/plus.svg';
 
 const themeStyles = {
   reading: {
@@ -58,12 +56,20 @@ export function ActivitySection({
       style={sectionStyles.centerButton}
     >
       {actionType === 'play' ? (
-        <View style={sectionStyles.centerIconPlay}>
-          <PlayIcon width={48} height={55} />
+        <View style={sectionStyles.centerIconWrap}>
+          <Image
+            source={require('../../assets/icons/play.png')}
+            style={[sectionStyles.centerIconImage, sectionStyles.centerIconPlay]}
+            resizeMode="contain"
+          />
         </View>
       ) : (
-        <View style={sectionStyles.centerIconPlus}>
-          <PlusIcon width={56} height={56} />
+        <View style={sectionStyles.centerIconWrap}>
+          <Image
+            source={require('../../assets/icons/plus.png')}
+            style={[sectionStyles.centerIconImage, sectionStyles.centerIconPlus]}
+            resizeMode="contain"
+          />
         </View>
       )}
     </TouchableOpacity>
@@ -84,16 +90,22 @@ export function ActivitySection({
             { backgroundColor: styles.headerBg },
           ]}
         >
-          <View style={sectionStyles.iconCircleWrap}>
-            <View
-              style={[
-                sectionStyles.iconCircleShadow,
-                { backgroundColor: styles.headerShadow },
-              ]}
-            />
-            <View style={[sectionStyles.iconCircle, { backgroundColor: styles.iconBg }]}>
+          <View style={sectionStyles.headerIconWrap}>
+            {theme === 'reading' ? (
+              <Image
+                source={require('../../assets/icons/books.png')}
+                style={sectionStyles.headerIconSize}
+                resizeMode="contain"
+              />
+            ) : theme === 'running' ? (
+              <Image
+                source={require('../../assets/icons/shoe.png')}
+                style={sectionStyles.headerIconSize}
+                resizeMode="contain"
+              />
+            ) : (
               <Feather name={icon} size={22} color="#0a0a0a" />
-            </View>
+            )}
           </View>
           <Text style={sectionStyles.label}>{label}</Text>
           <View style={sectionStyles.statBlock}>
@@ -148,31 +160,14 @@ const sectionStyles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#000',
+    overflow: 'hidden',
   },
-  iconCircleWrap: {
-    position: 'relative',
+  headerIconWrap: {
     marginRight: 12,
   },
-  iconCircleShadow: {
-    position: 'absolute',
-    left: SHIFT,
-    top: SHIFT,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  iconCircle: {
-    position: 'relative',
-    zIndex: 1,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#000',
+  headerIconSize: {
+    width: 28,
+    height: 28,
   },
   label: {
     flex: 1,
@@ -213,12 +208,18 @@ const sectionStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centerIconPlay: {
-    transform: [{ translateX: 5 }, { translateY: 6 }],
+  centerIconWrap: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  centerIconPlus: {
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+  centerIconImage: {
+    width: 56,
+    height: 56,
   },
+  centerIconPlay: {},
+  centerIconPlus: {},
   gridWidget: {
     flex: 1,
     alignItems: 'flex-start',

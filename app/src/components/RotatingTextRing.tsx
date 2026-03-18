@@ -80,9 +80,9 @@ const styles = StyleSheet.create({
   },
   char: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
     color: '#000000',
-    letterSpacing: 0,
+    letterSpacing: 1,
     includeFontPadding: false,
   },
   center: {
