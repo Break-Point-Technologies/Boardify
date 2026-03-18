@@ -261,7 +261,7 @@ export default function LoginScreen() {
               source={require('../../assets/icon.png')}
               style={styles.logo}
             />
-            <Text style={styles.logoText}>MyBreakPoint</Text>
+            <Text style={styles.logoText}>Boardify</Text>
             <Text style={styles.tagline}>
               The ultimate tennis & pickleball companion
             </Text>

@@ -1,4 +1,4 @@
-# MyBreakPoint React Native App
+# Boardify React Native App
 
 ## Building for iOS & Android
 ```bash

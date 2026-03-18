@@ -100,7 +100,7 @@ function getReversedClientId() {
 }
 
 function getAllReversedClientIds() {
-  const schemes = ['mybreakpoint'];
+  const schemes = ['boardify'];
   
   const prodIosClientId = envProd.GOOGLE_OAUTH_CLIENT_ID_IOS;
   if (prodIosClientId) {
@@ -137,11 +137,11 @@ const allUrlSchemes = getAllReversedClientIds();
 
 module.exports = {
   expo: {
-    name: 'MyBreakPoint',
-    slug: 'mybreakpoint',
-    owner: 'mybreakpoint',
+    name: 'Boardify',
+    slug: 'boardify',
+    owner: 'boardify',
     version: appVersion,
-    scheme: 'mybreakpoint',
+    scheme: 'boardify',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'dark',
@@ -160,7 +160,7 @@ module.exports = {
         {
           version: appVersion,
           buildNumber: buildNumber,
-          displayName: 'MyBreakPoint',
+          displayName: 'Boardify',
           category: 'public.app-category.sports',
         },
       ],
@@ -173,7 +173,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'app.mybreakpoint',
+      bundleIdentifier: 'app.boardify',
       appleTeamId: 'BZHS36ZMFQ',
       backgroundColor: '#020617',
       buildNumber: buildNumber,
@@ -192,8 +192,8 @@ module.exports = {
         ],
       },
       associatedDomains: [
-        'applinks:mybreakpoint.app',
-        ...(isRelease ? [] : ['applinks:mybreakpoint.app?mode=developer']),
+        'applinks:boardify.app',
+        ...(isRelease ? [] : ['applinks:boardify.app?mode=developer']),
       ],
       entitlements: {
         'aps-environment': isRelease ? 'production' : 'development',
@@ -216,12 +216,12 @@ module.exports = {
         backgroundColor: '#000000',
         barStyle: 'light-content'
       },
-      package: 'app.mybreakpoint',
+      package: 'app.boardify',
       intentFilters: [
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [{ scheme: 'https', host: 'mybreakpoint.app', pathPrefix: '/' }],
+          data: [{ scheme: 'https', host: 'boardify.app', pathPrefix: '/' }],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
@@ -236,7 +236,7 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
       themeColor: '#020617',
-      description: 'MyBreakPoint — a modern React Native template.'
+      description: 'Boardify — a modern React Native template.'
     },
     backgroundColor: '#020617',
     extra: {

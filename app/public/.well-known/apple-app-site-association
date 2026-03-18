@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["BZHS36ZMFQ.app.mybreakpoint"],
+        "appIDs": ["BZHS36ZMFQ.app.boardify"],
         "components": [
           {
             "/": "*",
@@ -12,19 +12,19 @@
         ]
       },
       {
-        "appID": "BZHS36ZMFQ.app.mybreakpoint",
+        "appID": "BZHS36ZMFQ.app.boardify",
         "paths": ["*"]
       }
     ]
   },
   "activitycontinuation": {
     "apps": [
-      "BZHS36ZMFQ.app.mybreakpoint"
+      "BZHS36ZMFQ.app.boardify"
     ]
   },
   "webcredentials": {
     "apps": [
-      "BZHS36ZMFQ.app.mybreakpoint"
+      "BZHS36ZMFQ.app.boardify"
     ]
   }
 }

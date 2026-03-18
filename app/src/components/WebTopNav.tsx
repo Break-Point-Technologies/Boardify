@@ -249,7 +249,7 @@ export function WebTopNav({
               resizeMode="contain"
             />
             <Text className="text-base sm:text-lg font-semibold tracking-tight text-white">
-              MyBreakPoint
+              Boardify
             </Text>
           </Pressable>
 

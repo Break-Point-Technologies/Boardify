@@ -1,10 +1,9 @@
 import React from 'react';
-import { Platform, View, StyleSheet, StatusBar, Image } from 'react-native';
-import { Tabs, usePathname } from 'expo-router';
+import { Platform, DynamicColorIOS, View, StyleSheet, StatusBar, Image, useWindowDimensions } from 'react-native';
+import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActivitiesHeader, ACTIVITIES_HEADER_HEIGHT, WebTopNav } from '../../src/components';
+import { WebTopNav } from '../../src/components';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 const TabIcon = NativeTabs.Trigger.Icon;
@@ -14,17 +13,23 @@ const BOARDS_TAB_ICON = require('../../assets/icons/board-tab.png');
 const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
 
 const TAB_ITEMS = [
-  { name: 'index', label: 'Home', iosIcon: 'house', androidIcon: 'home' as const, webIcon: 'home' as const },
-  { name: 'account', label: 'Account', iosIcon: 'user', androidIcon: 'user' as const, webIcon: 'user' as const },
-  { name: 'about', label: 'About', iosIcon: 'calendar', androidIcon: 'calendar' as const, webIcon: 'calendar' as const },
+  { name: 'index', label: 'Home', iosIcon: 'house' as const, androidIcon: 'home' as const, webIcon: 'home' as const },
+  { name: 'account', label: 'Account', iosIcon: 'person' as const, androidIcon: 'user' as const, webIcon: 'user' as const },
 ] as const;
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const { user, loading } = useAuth();
   const useNativeTabs = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
-  const pathname = usePathname();
+
+  const tabBarTintColor = Platform.OS === 'ios'
+    ? DynamicColorIOS({ dark: '#0a0a0a', light: '#0a0a0a' })
+    : '#0a0a0a';
+  const tabBarLabelColor = Platform.OS === 'ios'
+    ? DynamicColorIOS({ dark: 'rgba(10,10,10,0.6)', light: 'rgba(10,10,10,0.6)' })
+    : 'rgba(10,10,10,0.6)';
 
   if (isWeb) {
     return (
@@ -55,37 +60,32 @@ export default function TabsLayout() {
     );
   }
 
-  const isActivitiesHome = pathname === '/(tabs)' || pathname === '/' || pathname === '/(tabs)/index';
-  const headerHeight = isActivitiesHome ? ACTIVITIES_HEADER_HEIGHT : 0;
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { minHeight: height }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f0e8" />
-      {isActivitiesHome ? <ActivitiesHeader /> : null}
-      <View style={[styles.contentWrapper, { paddingTop: headerHeight + insets.top }]}>
+      <View style={[styles.contentWrapper, { paddingTop: insets.top, minHeight: height - insets.top }]}>
         {useNativeTabs ? (
           <NativeTabs
-            labelStyle={{ color: 'rgba(10,10,10,0.6)' }}
-            tintColor="#0a0a0a"
+            labelStyle={{ color: tabBarLabelColor }}
+            tintColor={tabBarTintColor}
             blurEffect="none"
-            backgroundColor="#f5f0e8"
+            backgroundColor="transparent"
             shadowColor="transparent"
           >
             {TAB_ITEMS.map((item) => (
               <NativeTabs.Trigger key={item.name} name={item.name}>
                 <TabLabel>{item.label}</TabLabel>
                 {item.name === 'index' ? (
-                  <TabIcon src={BOARDS_TAB_ICON} selectedColor="#0a0a0a" />
-                ) : item.name === 'account' ? (
-                  <TabIcon src={ACCOUNT_TAB_ICON} selectedColor="#0a0a0a" />
+                  <TabIcon src={BOARDS_TAB_ICON} selectedColor={tabBarTintColor} />
                 ) : (
-                  <TabIcon sf={item.iosIcon} selectedColor="#0a0a0a" />
+                  <TabIcon src={ACCOUNT_TAB_ICON} selectedColor={tabBarTintColor} />
                 )}
               </NativeTabs.Trigger>
             ))}
           </NativeTabs>
         ) : (
           <Tabs
+            detachInactiveScreens={false}
             screenOptions={{
               headerShown: false,
               tabBarActiveTintColor: '#0a0a0a',
@@ -116,12 +116,10 @@ export default function TabsLayout() {
                       <View style={styles.tabIconWrap}>
                         <Image source={BOARDS_TAB_ICON} style={styles.tabIconBoard} resizeMode="contain" />
                       </View>
-                    ) : item.name === 'account' ? (
+                    ) : (
                       <View style={styles.tabIconWrap}>
                         <Image source={ACCOUNT_TAB_ICON} style={styles.tabIconAccount} resizeMode="contain" />
                       </View>
-                    ) : (
-                      <Feather name={item.androidIcon} size={22} color={color} />
                     ),
                   tabBarAccessibilityLabel: item.label,
                 }}

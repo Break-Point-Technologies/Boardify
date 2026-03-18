@@ -19,7 +19,8 @@ import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
 import { NetworkProvider, useNetwork } from '../src/contexts/NetworkContext';
 import { useRouter } from 'expo-router';
 
-const BACKGROUND_COLOR = '#020617';
+const BACKGROUND_COLOR = '#f5f0e8';
+const MODAL_BACKGROUND = '#020617';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,12 +30,12 @@ const modalScreenOptions = {
   headerTransparent: Platform.OS === 'ios',
   headerBlurEffect: Platform.OS === 'ios' ? 'dark' : undefined,
   headerStyle: (Platform.OS === 'android' || Platform.OS === 'web')
-    ? { backgroundColor: BACKGROUND_COLOR }
+    ? { backgroundColor: MODAL_BACKGROUND }
     : undefined,
   headerShadowVisible: false,
   headerTintColor: '#ffffff',
   headerBackVisible: Platform.OS === 'web' ? true : undefined,
-  contentStyle: { backgroundColor: BACKGROUND_COLOR },
+  contentStyle: { backgroundColor: MODAL_BACKGROUND },
   gestureEnabled: true,
   headerTitle: '',
   animation: Platform.OS === 'android' ? 'slide_from_bottom' : 'default',
@@ -99,7 +100,7 @@ function AppContent() {
       style={{ flex: 1, backgroundColor: BACKGROUND_COLOR }}
       onLayout={onLayoutRootView}
     >
-      <StatusBar style="light" backgroundColor="black" />
+      <StatusBar style="dark-content" backgroundColor="#f5f0e8" />
       <OfflineBanner />
       <Stack
         screenOptions={{
@@ -141,7 +142,8 @@ function AppContent() {
           name="(tabs)"
           options={{
             headerShown: false,
-            animation: 'fade',
+            animation: 'none',
+            contentStyle: { backgroundColor: BACKGROUND_COLOR },
           }}
         />
         <Stack.Screen name="profile" options={modalScreenOptions} />
