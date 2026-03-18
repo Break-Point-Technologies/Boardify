@@ -10,7 +10,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 const TabIcon = NativeTabs.Trigger.Icon;
 const TabLabel = NativeTabs.Trigger.Label;
 
-const BOARDS_TAB_ICON = require('../../assets/icons/boards-tab.png');
+const BOARDS_TAB_ICON = require('../../assets/icons/board-tabs.png');
 
 const TAB_ITEMS = [
   { name: 'index', label: 'Home', iosIcon: 'house', androidIcon: 'home' as const, webIcon: 'home' as const },
