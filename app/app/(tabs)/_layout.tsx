@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, DynamicColorIOS, View, StyleSheet, StatusBar } from 'react-native';
+import { Platform, View, StyleSheet, StatusBar, Image } from 'react-native';
 import { Tabs, usePathname } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Feather } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { useAuth } from '../../src/contexts/AuthContext';
 
 const TabIcon = NativeTabs.Trigger.Icon;
 const TabLabel = NativeTabs.Trigger.Label;
+
+const BOARDS_TAB_ICON = require('../../assets/icons/boards-tab.png');
 
 const TAB_ITEMS = [
   { name: 'index', label: 'Home', iosIcon: 'house', androidIcon: 'home' as const, webIcon: 'home' as const },
@@ -21,13 +23,6 @@ export default function TabsLayout() {
   const useNativeTabs = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const pathname = usePathname();
-
-  const tabBarTintColor = Platform.OS === 'ios'
-    ? DynamicColorIOS({ dark: '#0a0a0a', light: '#0a0a0a' })
-    : '#0a0a0a';
-  const tabBarLabelColor = Platform.OS === 'ios'
-    ? DynamicColorIOS({ dark: 'rgba(10,10,10,0.6)', light: 'rgba(10,10,10,0.6)' })
-    : 'rgba(10,10,10,0.6)';
 
   if (isWeb) {
     return (
@@ -68,8 +63,8 @@ export default function TabsLayout() {
       <View style={[styles.contentWrapper, { paddingTop: headerHeight + insets.top }]}>
         {useNativeTabs ? (
           <NativeTabs
-            labelStyle={{ color: tabBarLabelColor }}
-            tintColor={tabBarTintColor}
+            labelStyle={{ color: 'rgba(10,10,10,0.6)' }}
+            tintColor="#0a0a0a"
             blurEffect="none"
             backgroundColor="#f5f0e8"
             shadowColor="transparent"
@@ -77,7 +72,11 @@ export default function TabsLayout() {
             {TAB_ITEMS.map((item) => (
               <NativeTabs.Trigger key={item.name} name={item.name}>
                 <TabLabel>{item.label}</TabLabel>
-                <TabIcon sf={item.iosIcon} selectedColor={tabBarTintColor} />
+                {item.name === 'index' ? (
+                  <TabIcon src={BOARDS_TAB_ICON} selectedColor="#0a0a0a" />
+                ) : (
+                  <TabIcon sf={item.iosIcon} selectedColor="#0a0a0a" />
+                )}
               </NativeTabs.Trigger>
             ))}
           </NativeTabs>
@@ -108,7 +107,14 @@ export default function TabsLayout() {
                 options={{
                   title: item.label,
                   tabBarLabel: item.label,
-                  tabBarIcon: ({ color, size }) => <Feather name={item.androidIcon} size={22} color={color} />,
+                  tabBarIcon: ({ color, size }) =>
+                    item.name === 'index' ? (
+                      <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                        <Image source={BOARDS_TAB_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                      </View>
+                    ) : (
+                      <Feather name={item.androidIcon} size={22} color={color} />
+                    ),
                   tabBarAccessibilityLabel: item.label,
                 }}
               />
