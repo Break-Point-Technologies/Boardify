@@ -10,10 +10,12 @@ import { useAuth } from '../../src/contexts/AuthContext';
 const TabIcon = NativeTabs.Trigger.Icon;
 const TabLabel = NativeTabs.Trigger.Label;
 
-const BOARDS_TAB_ICON = require('../../assets/icons/board-tabs.png');
+const BOARDS_TAB_ICON = require('../../assets/icons/board-tab.png');
+const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
 
 const TAB_ITEMS = [
   { name: 'index', label: 'Home', iosIcon: 'house', androidIcon: 'home' as const, webIcon: 'home' as const },
+  { name: 'account', label: 'Account', iosIcon: 'user', androidIcon: 'user' as const, webIcon: 'user' as const },
   { name: 'about', label: 'About', iosIcon: 'calendar', androidIcon: 'calendar' as const, webIcon: 'calendar' as const },
 ] as const;
 
@@ -74,6 +76,8 @@ export default function TabsLayout() {
                 <TabLabel>{item.label}</TabLabel>
                 {item.name === 'index' ? (
                   <TabIcon src={BOARDS_TAB_ICON} selectedColor="#0a0a0a" />
+                ) : item.name === 'account' ? (
+                  <TabIcon src={ACCOUNT_TAB_ICON} selectedColor="#0a0a0a" />
                 ) : (
                   <TabIcon sf={item.iosIcon} selectedColor="#0a0a0a" />
                 )}
@@ -109,8 +113,12 @@ export default function TabsLayout() {
                   tabBarLabel: item.label,
                   tabBarIcon: ({ color, size }) =>
                     item.name === 'index' ? (
-                      <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-                        <Image source={BOARDS_TAB_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                      <View style={styles.tabIconWrap}>
+                        <Image source={BOARDS_TAB_ICON} style={styles.tabIconBoard} resizeMode="contain" />
+                      </View>
+                    ) : item.name === 'account' ? (
+                      <View style={styles.tabIconWrap}>
+                        <Image source={ACCOUNT_TAB_ICON} style={styles.tabIconAccount} resizeMode="contain" />
                       </View>
                     ) : (
                       <Feather name={item.androidIcon} size={22} color={color} />
@@ -133,5 +141,19 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
+  },
+  tabIconWrap: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconBoard: {
+    width: 20,
+    height: 20,
+  },
+  tabIconAccount: {
+    width: 24,
+    height: 24,
   },
 });
