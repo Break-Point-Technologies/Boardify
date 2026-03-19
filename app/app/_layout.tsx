@@ -100,7 +100,7 @@ function AppContent() {
       style={{ flex: 1, backgroundColor: BACKGROUND_COLOR }}
       onLayout={onLayoutRootView}
     >
-      <StatusBar style="dark-content" backgroundColor="#f5f0e8" />
+      <StatusBar style="dark" backgroundColor="#f5f0e8" />
       <OfflineBanner />
       <Stack
         screenOptions={{

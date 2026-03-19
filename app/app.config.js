@@ -144,7 +144,7 @@ module.exports = {
     scheme: 'boardify',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'dark',
+    userInterfaceStyle: 'light',
     newArchEnabled: true,
     plugins: [
       'expo-router',
@@ -169,18 +169,18 @@ module.exports = {
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',
-      backgroundColor: '#020617'
+      backgroundColor: '#f5f0e8'
     },
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'app.boardify',
       appleTeamId: 'BZHS36ZMFQ',
-      backgroundColor: '#020617',
+      backgroundColor: '#f5f0e8',
       buildNumber: buildNumber,
       splash: {
         image: './assets/splash.png',
         resizeMode: 'contain',
-        backgroundColor: '#020617'
+        backgroundColor: '#f5f0e8'
       },
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
@@ -203,18 +203,18 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/icon-foreground-android.png',
-        backgroundColor: '#020617'
+        backgroundColor: '#f5f0e8'
       },
       splash: {
         image: './assets/splash.png',
         resizeMode: 'contain',
-        backgroundColor: '#020617'
+        backgroundColor: '#f5f0e8'
       },
       predictiveBackGestureEnabled: false,
-      backgroundColor: '#020617',
+      backgroundColor: '#f5f0e8',
       navigationBar: {
-        backgroundColor: '#000000',
-        barStyle: 'light-content'
+        backgroundColor: '#f5f0e8',
+        barStyle: 'dark-content'
       },
       package: 'app.boardify',
       intentFilters: [
@@ -235,10 +235,10 @@ module.exports = {
     },
     web: {
       favicon: './assets/favicon.png',
-      themeColor: '#020617',
+      themeColor: '#f5f0e8',
       description: 'Boardify — a modern React Native template.'
     },
-    backgroundColor: '#020617',
+    backgroundColor: '#f5f0e8',
     extra: {
       ...extra,
       eas: {

@@ -6,8 +6,9 @@ import { router } from 'expo-router';
 import { hapticLight } from '../utils/haptics';
 
 export const ACTIVITIES_HEADER_HEIGHT = 64;
+export const MOBILE_NAV_HEIGHT = 64;
 
-export function ActivitiesHeader() {
+export function ActivitiesHeader({ embeddedInLayout = false }: { embeddedInLayout?: boolean }) {
   const insets = useSafeAreaInsets();
 
   const onMenuPress = () => {
@@ -21,7 +22,12 @@ export function ActivitiesHeader() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        embeddedInLayout ? styles.containerEmbedded : { paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.iconButtonWrap}>
         <View style={styles.iconButtonShadow} />
         <Pressable
@@ -61,6 +67,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f0e8',
     zIndex: 999,
     elevation: 10,
+  },
+  containerEmbedded: {
+    position: 'relative',
+    height: ACTIVITIES_HEADER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    backgroundColor: '#f5f0e8',
   },
   title: {
     fontSize: 22,

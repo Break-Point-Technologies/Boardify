@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
-import { ActivitiesHeader, ACTIVITIES_HEADER_HEIGHT } from '../components/ActivitiesHeader';
+import { ActivitiesHeader } from '../components/ActivitiesHeader';
 
 const SHIFT = 5;
 
@@ -59,13 +59,13 @@ export default function HomeScreen() {
 
   return (
     <View className="relative flex-1" style={{ backgroundColor: '#f5f0e8' }}>
-      {!isWeb && <ActivitiesHeader />}
+      {isWeb && <ActivitiesHeader />}
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
         contentContainerStyle={{
           paddingTop:
-            (isWeb ? 24 : ACTIVITIES_HEADER_HEIGHT + insets.top + Math.max(12, insets.top / 2)) +
+            (isWeb ? 24 : Math.max(12, insets.top / 2)) +
             (Platform.OS === 'ios' && Platform.isPad ? IPAD_TAB_CONTENT_TOP_PADDING : 0),
           paddingBottom: insets.bottom + 24,
           paddingHorizontal: isWeb ? 24 : 16,

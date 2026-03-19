@@ -67,31 +67,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Check for existing session on mount
     const checkSession = async () => {
       try {
-        // On web, check for token in URL parameters (OAuth callback)
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
           const urlParams = new URLSearchParams(window.location.search);
           const token = urlParams.get('token') || urlParams.get('session_token');
           if (token) {
-            // Store the token from URL
             const { storeSessionToken } = await import('../api/session');
             await storeSessionToken(token);
-            // Clean up URL
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, '', newUrl);
+            window.history.replaceState({}, '', window.location.pathname);
           }
         }
 
-        // First try to load from cache for fast startup
         const cached = await AsyncStorage.getItem(AUTH_USER_KEY);
         if (cached && mounted) {
           const parsed: User = JSON.parse(cached);
           setUser(parsed);
         }
 
-        // Then verify with server (skip when offline so we keep cached user)
         const [session, token] = await Promise.all([getSession(), getStoredSessionToken()]);
         if (session?.session && mounted) {
           await refreshUser();
@@ -100,7 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             await AsyncStorage.removeItem(AUTH_USER_KEY);
           }
-          // If we have cached user + token but no session, we're likely offline — keep cached user
         }
       } catch (e) {
         if (mounted) {
