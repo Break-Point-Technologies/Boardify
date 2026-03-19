@@ -7,8 +7,13 @@ import {
   RefreshControl,
   Platform,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +23,46 @@ import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
 import { ActivitiesHeader } from '../components/ActivitiesHeader';
 
 const SHIFT = 5;
+
+const PRESS_DURATION = 60;
+const RELEASE_DURATION = 100;
+
+function BoardCardPressable({
+  shadowStyle,
+  topStyle,
+  onPress,
+  children,
+}: {
+  shadowStyle: object;
+  topStyle: object;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  const offset = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: offset.value },
+      { translateY: offset.value },
+    ],
+  }));
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        offset.value = withTiming(SHIFT, { duration: PRESS_DURATION });
+      }}
+      onPressOut={() => {
+        offset.value = withTiming(0, { duration: RELEASE_DURATION });
+      }}
+      style={homeStyles.boardCardWrap}
+    >
+      <View style={[homeStyles.boardCardShadow, shadowStyle]} />
+      <Animated.View style={[topStyle, animatedStyle]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 const MOCK_BOARDS = [
   { id: '1', name: 'Work', color: '#a5d6a5' },
@@ -96,30 +141,24 @@ export default function HomeScreen() {
           <Text style={homeStyles.sectionTitle}>My Boards</Text>
           <View style={homeStyles.boardGrid}>
             {MOCK_BOARDS.map((board) => (
-              <TouchableOpacity
+              <BoardCardPressable
                 key={board.id}
-                activeOpacity={0.9}
+                shadowStyle={{ backgroundColor: board.color }}
+                topStyle={homeStyles.boardCard}
                 onPress={() => onBoardPress(board.id)}
-                style={homeStyles.boardCardWrap}
               >
-                <View style={[homeStyles.boardCardShadow, { backgroundColor: board.color }]} />
-                <View style={homeStyles.boardCard}>
-                  <Text style={homeStyles.boardCardName} numberOfLines={1}>{board.name}</Text>
-                  <Feather name="chevron-right" size={18} color="#666" />
-                </View>
-              </TouchableOpacity>
+                <Text style={homeStyles.boardCardName} numberOfLines={1}>{board.name}</Text>
+                <Feather name="chevron-right" size={18} color="#666" />
+              </BoardCardPressable>
             ))}
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <BoardCardPressable
+              shadowStyle={{}}
+              topStyle={homeStyles.createBoardCard}
               onPress={onCreateBoard}
-              style={homeStyles.boardCardWrap}
             >
-              <View style={homeStyles.boardCardShadow} />
-              <View style={homeStyles.createBoardCard}>
-                <Feather name="plus" size={24} color="#666" />
-                <Text style={homeStyles.createBoardText}>Create board</Text>
-              </View>
-            </TouchableOpacity>
+              <Feather name="plus" size={24} color="#666" />
+              <Text style={homeStyles.createBoardText}>Create board</Text>
+            </BoardCardPressable>
           </View>
         </View>
       </ScrollView>

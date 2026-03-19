@@ -1,3 +1,0 @@
-export const IPAD_TAB_CONTENT_TOP_PADDING = 58;
-
-export const TAB_HEADER_HEIGHT = 64;
