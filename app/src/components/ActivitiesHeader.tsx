@@ -6,6 +6,11 @@ import { router, usePathname } from 'expo-router';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { ContextMenu } from './ContextMenu';
 import { hapticLight } from '../utils/haptics';
+import {
+  BOARD_SORT_LABELS,
+  BOARD_SORT_ORDER,
+  useBoardSort,
+} from '../contexts/BoardSortContext';
 
 export const ACTIVITIES_HEADER_HEIGHT = 64;
 export const MOBILE_NAV_HEIGHT = 64;
@@ -40,7 +45,7 @@ function useTabTitle() {
 
 export function ActivitiesHeader({
   embeddedInLayout = false,
-  user = null,
+  user: _user = null,
 }: {
   embeddedInLayout?: boolean;
   user?: User | null;
@@ -48,6 +53,7 @@ export function ActivitiesHeader({
   const insets = useSafeAreaInsets();
   const isHomeTab = useIsHomeTab();
   const tabTitle = useTabTitle();
+  const { sortMode, setSortMode } = useBoardSort();
   const isGlassAvailable = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
   const openCreateBoard = useCallback(() => {
     hapticLight();
@@ -82,45 +88,18 @@ export function ActivitiesHeader({
     );
   };
 
-  const filterOptions = [
-    {
-      label: 'Messages',
-      value: 'messages',
+  const boardSortMenuOptions = BOARD_SORT_ORDER.map((mode) => {
+    const base = BOARD_SORT_LABELS[mode];
+    const label = sortMode === mode ? `✓ ${base}` : base;
+    return {
+      label,
+      value: `sort:${mode}`,
       onPress: () => {
         hapticLight();
-        router.push('/(tabs)/messages');
+        setSortMode(mode);
       },
-    },
-    {
-      label: 'Account',
-      value: 'account',
-      onPress: () => {
-        hapticLight();
-        router.push('/(tabs)/account');
-      },
-    },
-    {
-      label: user ? 'Profile' : 'Sign in',
-      value: 'profile',
-      onPress: () => {
-        hapticLight();
-        if (user) router.push('/profile');
-        else router.push('/login');
-      },
-    },
-    ...(user
-      ? [
-          {
-            label: 'Settings',
-            value: 'settings',
-            onPress: () => {
-              hapticLight();
-              router.push('/settings');
-            },
-          },
-        ]
-      : []),
-  ];
+    };
+  });
 
   const titleStyle = styles.title;
 
@@ -137,11 +116,11 @@ export function ActivitiesHeader({
           <View style={styles.homeRow}>
             <View style={styles.homeSide}>
               <ContextMenu
-                options={filterOptions}
+                options={boardSortMenuOptions}
                 trigger={
                   <Pressable
                     hitSlop={12}
-                    accessibilityLabel="Filter and more"
+                    accessibilityLabel="Sort boards"
                     style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
                   >
                     {renderGlassRound('more-horizontal', 22)}

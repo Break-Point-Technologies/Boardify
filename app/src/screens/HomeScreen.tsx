@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import { hapticLight } from '../utils/haptics';
 import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
 import { ActivitiesHeader, MOBILE_NAV_HEIGHT } from '../components/ActivitiesHeader';
 import { TabScreenChrome } from '../components/TabScreenChrome';
+import { sortBoards, useBoardSort } from '../contexts/BoardSortContext';
 
 const SHIFT = 5;
 
@@ -65,18 +66,51 @@ function BoardCardPressable({
   );
 }
 
-const MOCK_BOARDS = [
-  { id: '1', name: 'Work', color: '#a5d6a5' },
-  { id: '2', name: 'Personal', color: '#F3D9B1' },
+type BoardRow = {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const MOCK_BOARDS: BoardRow[] = [
+  {
+    id: '1',
+    name: 'Work',
+    color: '#a5d6a5',
+    createdAt: '2025-01-10T12:00:00.000Z',
+    updatedAt: '2026-03-01T09:00:00.000Z',
+  },
+  {
+    id: '2',
+    name: 'Personal',
+    color: '#F3D9B1',
+    createdAt: '2025-06-20T15:30:00.000Z',
+    updatedAt: '2026-03-15T18:20:00.000Z',
+  },
+  {
+    id: '3',
+    name: 'Side project',
+    color: '#b8c5ff',
+    createdAt: '2026-02-01T10:00:00.000Z',
+    updatedAt: '2026-02-28T12:00:00.000Z',
+  },
 ];
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { loading } = useAuth();
+  const { sortMode } = useBoardSort();
   const scrollViewRef = useRef<ScrollView>(null);
   const [refreshing, setRefreshing] = useState(false);
   const isWeb = Platform.OS === 'web';
+
+  const sortedBoards = useMemo(
+    () => sortBoards(MOCK_BOARDS, sortMode),
+    [sortMode],
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -92,6 +126,7 @@ export default function HomeScreen() {
 
   const onCreateBoard = () => {
     hapticLight();
+    router.push('/create-board');
   };
 
   if (loading) {
@@ -140,7 +175,7 @@ export default function HomeScreen() {
       <View style={homeStyles.section}>
         <Text style={homeStyles.sectionTitle}>My Boards</Text>
         <View style={homeStyles.boardGrid}>
-          {MOCK_BOARDS.map((board) => (
+          {sortedBoards.map((board) => (
             <BoardCardPressable
               key={board.id}
               shadowStyle={{ backgroundColor: board.color }}

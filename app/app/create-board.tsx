@@ -20,7 +20,6 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hapticLight } from '../src/utils/haptics';
 
-/** Space between bottom of native header (X / title row) and card */
 const BELOW_HEADER_GAP = 10;
 
 const BG = '#f5f0e8';
@@ -28,7 +27,6 @@ const SHIFT = 5;
 const PRESS_IN = 60;
 const PRESS_OUT = 100;
 
-/** Same structure as HomeScreen `BoardCardPressable` — shadow layer + animated face */
 function BoardStyleButton({
   shadowColor,
   onPress,
@@ -253,7 +251,6 @@ const styles = StyleSheet.create({
     marginTop: 28,
     gap: 12,
   },
-  /** Mirrors HomeScreen `boardCardWrap` / `boardCardShadow` / `boardCard` */
   boardBtnWrap: {
     position: 'relative',
     flex: 1,
