@@ -80,10 +80,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#0a0a0a',
+    lineHeight: 18,
   },
   subtitle: {
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+    lineHeight: 16,
+    fontWeight: '400',
   },
 });

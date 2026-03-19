@@ -69,7 +69,12 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
         subtitle: card.subtitle,
         labelColor: card.labelColor,
         columnTitle: col.title,
-        layout,
+        layout: {
+          x: Math.round(layout.x),
+          y: Math.round(layout.y),
+          width: Math.round(layout.width),
+          height: Math.round(layout.height),
+        },
         columnIndex,
         cardIndex,
       });

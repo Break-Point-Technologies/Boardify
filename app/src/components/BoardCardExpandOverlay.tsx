@@ -26,7 +26,6 @@ const LIST_TITLE_LH = 18;
 const DETAIL_TITLE_SIZE = 22;
 const DETAIL_TITLE_LH = 28;
 
-/** Must match BoardCard so the close transition lands on the same silhouette. */
 const CARD_SHIFT = 4;
 const LIST_CARD_PAD_V = 10;
 
@@ -95,7 +94,6 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     progress,
   ]);
 
-  /** Outer: shadow + radius — never combine overflow:hidden here or iOS drops the shadow until late. */
   const shellOuterStyle = useAnimatedStyle(() => {
     const t = progress.value;
     const left = interpolate(t, [0, 1], [ox.value, 0], Extrapolation.CLAMP);
@@ -129,7 +127,6 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     };
   });
 
-  /** Inner: clip content to the same radius as the shell. */
   const shellInnerClipStyle = useAnimatedStyle(() => {
     const t = progress.value;
     const borderRadius = interpolate(t, [0, 1], [8, 0], Extrapolation.CLAMP);
@@ -140,7 +137,6 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     };
   });
 
-  /** Same offset “stamp” shadow as BoardCard; fades out while expanding so corners/shadow aren’t late on close. */
   const shellNeubShadowStyle = useAnimatedStyle(() => {
     const t = progress.value;
     const borderRadius = interpolate(t, [0, 1], [8, 0], Extrapolation.CLAMP);
@@ -200,26 +196,34 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     return {
       paddingHorizontal: interpolate(t, [0, 1], [12, 20], Extrapolation.CLAMP),
       paddingTop: interpolate(t, [0, 1], [10, 16], Extrapolation.CLAMP),
-      // Collapse matches BoardCard paddingVertical (10); expand adds safe-area inset for scroll room.
       paddingBottom: interpolate(t, [0, 1], [LIST_CARD_PAD_V, bottomPad], Extrapolation.CLAMP),
     };
   });
 
-  const detailMetaStyle = useAnimatedStyle(() => {
+  const detailSubtitleMorphStyle = useAnimatedStyle(() => {
     const t = progress.value;
     return {
-      opacity: interpolate(t, [0, 0.35, 0.52, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
-      maxHeight: interpolate(t, [0, 0.32, 0.48, 1], [0, 0, 800, 1200], Extrapolation.CLAMP),
+      fontSize: interpolate(t, [0, 1], [12, 15], Extrapolation.CLAMP),
+      lineHeight: interpolate(t, [0, 1], [16, 20], Extrapolation.CLAMP),
+      marginTop: 4,
+    };
+  });
+
+  const detailPlaceholderWrapStyle = useAnimatedStyle(() => {
+    const t = progress.value;
+    return {
+      opacity: interpolate(t, [0, 0.52, 0.68, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
+      maxHeight: interpolate(t, [0, 0.48, 0.62, 1], [0, 0, 320, 800], Extrapolation.CLAMP),
+      marginTop: interpolate(t, [0, 0.55, 0.75, 1], [0, 0, 12, 20], Extrapolation.CLAMP),
       overflow: 'hidden',
       transform: [
         {
-          translateY: interpolate(t, [0, 0.5, 1], [4, 2, 0], Extrapolation.CLAMP),
+          translateY: interpolate(t, [0, 0.55, 1], [6, 2, 0], Extrapolation.CLAMP),
         },
       ],
     };
   });
 
-  /** BoardCard uses a 1px black outline; fade it out while expanded so it isn’t missing until unmount. */
   const cardOutlineStyle = useAnimatedStyle(() => ({
     borderWidth: interpolate(progress.value, [0, 0.45, 1], [1, 0, 0], Extrapolation.CLAMP),
     borderColor: '#000',
@@ -267,13 +271,18 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
               </Pressable>
             </Animated.View>
             <Animated.View style={[styles.detailBody, detailBodyStyle]}>
-              <Animated.Text style={[styles.detailTitleBase, detailTitleStyle]} numberOfLines={4}>
+              <Animated.Text style={[styles.detailTitleBase, detailTitleStyle]} numberOfLines={2}>
                 {data.title}
               </Animated.Text>
-              <Animated.View style={detailMetaStyle}>
-                {data.subtitle ? (
-                  <Text style={styles.detailSubtitle}>{data.subtitle}</Text>
-                ) : null}
+              {data.subtitle ? (
+                <Animated.Text
+                  style={[styles.detailSubtitleBase, detailSubtitleMorphStyle]}
+                  numberOfLines={1}
+                >
+                  {data.subtitle}
+                </Animated.Text>
+              ) : null}
+              <Animated.View style={detailPlaceholderWrapStyle}>
                 <Text style={styles.detailPlaceholder}>
                   Add description, checklist, and more — coming soon.
                 </Text>
@@ -326,16 +335,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0a0a0a',
   },
-  detailSubtitle: {
-    fontSize: 15,
+  detailSubtitleBase: {
     color: '#666',
-    marginTop: 4,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   detailPlaceholder: {
     fontSize: 14,
     color: '#999',
-    marginTop: 20,
     lineHeight: 20,
   },
 });
