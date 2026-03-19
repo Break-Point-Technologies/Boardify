@@ -184,11 +184,14 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
       lastAbsRef.current = { x: absX, y: absY };
       const next = computeHover(absX, absY);
       setHoverTarget((prev) => {
-        if (prev == null && next == null) return prev;
-        if (prev != null && next != null && prev.col === next.col && prev.insertIndex === next.insertIndex) {
-          return prev;
+        if (next != null) {
+          if (prev != null && prev.col === next.col && prev.insertIndex === next.insertIndex) {
+            return prev;
+          }
+          return next;
         }
-        return next;
+        // Finger left column bounds (gaps, overscroll): keep last slot so the gap doesn't blink away
+        return prev;
       });
     },
     [computeHover]

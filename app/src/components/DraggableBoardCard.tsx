@@ -5,7 +5,6 @@ import { runOnJS, withSpring } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { BoardCard } from './BoardCard';
 import type { BoardCardData } from '../types/board';
-import { BOARD_CARD_ROW_HEIGHT } from '../board/boardDragUtils';
 import { hapticMedium } from '../utils/haptics';
 
 type DraggableBoardCardProps = {
@@ -175,10 +174,16 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'relative',
   },
-  /** Pull source row out of layout so placeholder + hidden row don't double the gap */
+  /**
+   * Remove the source row from layout flow without a fixed negative margin (that margin
+   * never matched real row height + card margins, and pulled the list above the gap up too far).
+   */
   draggingSourceLayout: {
     height: 0,
-    overflow: 'visible',
-    marginBottom: -BOARD_CARD_ROW_HEIGHT,
+    maxHeight: 0,
+    overflow: 'hidden',
+    marginTop: 0,
+    marginBottom: 0,
+    paddingVertical: 0,
   },
 });
