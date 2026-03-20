@@ -127,9 +127,9 @@ export function WebTopNav({
     setMobileMenuOpen(false);
   };
 
-  const handleSettingsPress = () => {
+  const handleAccountPress = () => {
     hapticLight();
-    router.push('/settings');
+    router.push('/(tabs)/account');
     setMobileMenuOpen(false);
   };
 
@@ -402,14 +402,14 @@ export function WebTopNav({
                         </View>
                       </Pressable>
                       <Pressable
-                        onPress={handleSettingsPress}
+                        onPress={handleAccountPress}
                         style={({ pressed }) => ({
                           opacity: pressed ? 0.8 : 1,
                         })}
                       >
                         <View className="px-4 py-3 rounded-xl flex-row items-center gap-3">
                           <Feather name="settings" size={20} color="rgba(255, 255, 255, 0.8)" />
-                          <Text className="text-sm font-medium text-white/80">Settings</Text>
+                          <Text className="text-sm font-medium text-white/80">Account</Text>
                         </View>
                       </Pressable>
                     </>

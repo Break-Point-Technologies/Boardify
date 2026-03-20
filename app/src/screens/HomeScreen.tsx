@@ -18,38 +18,7 @@ import { ActivitiesHeader, MOBILE_NAV_HEIGHT } from '../components/ActivitiesHea
 import { TabScreenChrome } from '../components/TabScreenChrome';
 import { NeuListRowPressable } from '../components/NeuListRowPressable';
 import { sortBoards, useBoardSort } from '../contexts/BoardSortContext';
-
-type BoardRow = {
-  id: string;
-  name: string;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const MOCK_BOARDS: BoardRow[] = [
-  {
-    id: '1',
-    name: 'Work',
-    color: '#a5d6a5',
-    createdAt: '2025-01-10T12:00:00.000Z',
-    updatedAt: '2026-03-01T09:00:00.000Z',
-  },
-  {
-    id: '2',
-    name: 'Personal',
-    color: '#F3D9B1',
-    createdAt: '2025-06-20T15:30:00.000Z',
-    updatedAt: '2026-03-15T18:20:00.000Z',
-  },
-  {
-    id: '3',
-    name: 'Side project',
-    color: '#b8c5ff',
-    createdAt: '2026-02-01T10:00:00.000Z',
-    updatedAt: '2026-02-28T12:00:00.000Z',
-  },
-];
+import { MOCK_BOARDS } from '../data/boards';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();

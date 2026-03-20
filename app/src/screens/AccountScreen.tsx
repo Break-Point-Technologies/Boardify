@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,17 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
 import { TabScreenChrome } from '../components/TabScreenChrome';
+import { boardLabelForId } from '../data/boards';
+import { getStoredDefaultBoardId } from '../storage/accountPrefs';
 
 const SHIFT = 5;
 
@@ -31,9 +35,21 @@ const DEFAULT_CONFIG: AccountConfig = {
 
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [config, setConfig] = useState<AccountConfig>(DEFAULT_CONFIG);
   const isWeb = Platform.OS === 'web';
+
+  const refreshDefaultBoard = useCallback(async () => {
+    const id = await getStoredDefaultBoardId();
+    setConfig((c) => ({ ...c, defaultBoardId: id }));
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshDefaultBoard();
+    }, [refreshDefaultBoard])
+  );
 
   const updateConfig = <K extends keyof AccountConfig>(key: K, value: AccountConfig[K]) => {
     hapticLight();
@@ -85,8 +101,11 @@ export default function AccountScreen() {
               <ConfigRowDivider />
               <ConfigRow
                 label="Default board"
-                sublabel={config.defaultBoardId ?? 'None'}
-                onPress={() => {}}
+                sublabel={boardLabelForId(config.defaultBoardId)}
+                onPress={() => {
+                  hapticLight();
+                  router.push('/default-board');
+                }}
                 showChevron
               />
               <ConfigRowDivider />
@@ -108,9 +127,27 @@ export default function AccountScreen() {
           <View style={styles.cardWrap}>
             <View style={styles.cardShadow} />
             <View style={styles.card}>
-              <ConfigRow label="Profile" sublabel="Name, photo" onPress={() => {}} showChevron />
+              <ConfigRow
+                label="Profile"
+                sublabel="Name, photo"
+                onPress={() => {
+                  hapticLight();
+                  router.push('/profile');
+                }}
+                showChevron
+              />
               <ConfigRowDivider />
-              <ConfigRow label="Sign out" sublabel="" onPress={() => {}} />
+              <ConfigRow
+                label="Sign out"
+                sublabel=""
+                onPress={() => {
+                  hapticLight();
+                  Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Sign out', style: 'destructive', onPress: () => logout() },
+                  ]);
+                }}
+              />
             </View>
           </View>
         </View>
