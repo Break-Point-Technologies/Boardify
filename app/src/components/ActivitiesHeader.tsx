@@ -151,13 +151,12 @@ export function ActivitiesHeader({
                 }}
                 trigger={
                   <Pressable
+                    key={sortGlassRemountKey}
                     hitSlop={12}
                     accessibilityLabel="Filter boards"
                     style={styles.glassPressable}
                   >
-                    <View key={sortGlassRemountKey} style={styles.sortGlassMount} collapsable={false}>
-                      {renderGlassRound('filter', 22)}
-                    </View>
+                    {renderGlassRound('filter', 22)}
                   </Pressable>
                 }
               />
@@ -203,13 +202,12 @@ export function ActivitiesHeader({
                   }}
                   trigger={
                     <Pressable
+                      key={filterGlassRemountKey}
                       hitSlop={12}
                       accessibilityLabel="Filter notifications"
                       style={styles.glassPressable}
                     >
-                      <View key={filterGlassRemountKey} style={styles.sortGlassMount} collapsable={false}>
-                        {renderGlassRound('filter', 22)}
-                      </View>
+                      {renderGlassRound('filter', 22)}
                     </Pressable>
                   }
                 />
@@ -257,8 +255,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     backgroundColor: '#f5f0e8',
-    zIndex: 999,
+    zIndex: 5000,
     elevation: 0,
+    overflow: 'visible',
   },
   containerEmbedded: {
     flex: 1,
@@ -269,6 +268,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     backgroundColor: '#f5f0e8',
+    overflow: 'visible',
+    zIndex: 1000,
   },
   homeRow: {
     flex: 1,
@@ -279,6 +280,8 @@ const styles = StyleSheet.create({
   homeSide: {
     width: 45,
     alignItems: 'flex-start',
+    overflow: 'visible',
+    zIndex: 1,
   },
   homeTitleWrap: {
     flex: 1,
@@ -291,6 +294,8 @@ const styles = StyleSheet.create({
     borderRadius: 22.5,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+    zIndex: 2,
   },
   glassFallbackLight: {
     borderWidth: 1,
@@ -303,10 +308,7 @@ const styles = StyleSheet.create({
   },
   glassPressable: {
     opacity: 1,
-  },
-  sortGlassMount: {
-    borderRadius: 22.5,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   title: {
     fontSize: 22,

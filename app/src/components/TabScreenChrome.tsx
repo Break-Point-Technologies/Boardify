@@ -27,5 +27,6 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     zIndex: 0,
+    elevation: 0,
   },
 });

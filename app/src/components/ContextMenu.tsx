@@ -164,7 +164,12 @@ export function ContextMenu({
       return (
         <Host colorScheme="light">
           <SwiftMenu label={
-            <View ref={triggerRef} style={styles.triggerWrapper} collapsable={false}>
+            <View
+              ref={triggerRef}
+              style={styles.triggerWrapper}
+              collapsable={false}
+              renderToHardwareTextureAndroid
+            >
               {trigger}
             </View>
           }>
@@ -179,7 +184,12 @@ export function ContextMenu({
         <Host colorScheme="light">
           <SwiftContextMenu>
             <SwiftContextMenu.Trigger>
-              <View ref={triggerRef} style={styles.triggerWrapper} collapsable={false}>
+              <View
+                ref={triggerRef}
+                style={styles.triggerWrapper}
+                collapsable={false}
+                renderToHardwareTextureAndroid
+              >
                 {trigger}
               </View>
             </SwiftContextMenu.Trigger>
@@ -263,10 +273,16 @@ export function ContextMenu({
 }
 
 const styles = StyleSheet.create({
+  /**
+   * Do not use overflow: 'hidden' here — it breaks expo-glass-effect (GlassView) compositing
+   * so the control paints behind tab content. zIndex keeps the trigger above siblings.
+   */
   triggerWrapper: {
     width: '100%',
     borderRadius: 22.5,
-    overflow: 'hidden',
+    overflow: 'visible',
+    zIndex: 2000,
+    elevation: 20,
   },
   androidMenuOverlay: {
     ...StyleSheet.absoluteFillObject,
