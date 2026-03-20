@@ -1,7 +1,7 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
-import type { SharedValue } from 'react-native-reanimated';
+import Animated, { Easing, LinearTransition, type SharedValue } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import { DraggableBoardCard } from './DraggableBoardCard';
@@ -10,15 +10,22 @@ import type { BoardCardData } from '../types/board';
 
 const COLUMN_SHIFT = 5;
 
+const ROW_LAYOUT = LinearTransition.duration(200).easing(Easing.out(Easing.cubic));
+
 export interface BoardColumnProps {
   title: string;
   cards: BoardCardData[];
   onAddCard?: () => void;
-  onCardPress?: (index: number, layout: { x: number; y: number; width: number; height: number }) => void;
+  onCardPress?: (
+    columnIndex: number,
+    cardIndex: number,
+    layout: { x: number; y: number; width: number; height: number }
+  ) => void;
   expandedCardKey?: string | null;
   columnIndex: number;
   draggingCardId: string | null;
-  hoverTarget: { col: number; insertIndex: number } | null;
+  /** -1 = no drop gap in this column; else virtual insert index */
+  hoverInsertIndex: number;
   onListLayout: (colIndex: number, rect: { x: number; y: number; width: number; height: number }) => void;
   onColumnScroll: (colIndex: number, scrollY: number) => void;
   translateX: SharedValue<number>;
@@ -39,7 +46,7 @@ export interface BoardColumnProps {
   listScrollEnabled?: boolean;
 }
 
-export function BoardColumn({
+function BoardColumnInner({
   title,
   cards,
   onAddCard,
@@ -47,7 +54,7 @@ export function BoardColumn({
   expandedCardKey,
   columnIndex,
   draggingCardId,
-  hoverTarget,
+  hoverInsertIndex,
   onListLayout,
   onColumnScroll,
   translateX,
@@ -90,7 +97,7 @@ export function BoardColumn({
    * dragged card in-place with opacity 0 so its GestureDetector stays mounted — otherwise the
    * pan unmounts mid-gesture and the floating card stops moving.
    */
-  const insertAt = hoverTarget?.col === columnIndex ? hoverTarget.insertIndex : -1;
+  const insertAt = hoverInsertIndex;
 
   const nodes: React.ReactNode[] = [];
   let virtualIndex = 0;
@@ -100,35 +107,40 @@ export function BoardColumn({
     const isBeingDragged = draggingCardId === c.id;
 
     if (!isBeingDragged && insertAt === virtualIndex) {
-      nodes.push(<BoardCardPlaceholder key={`gap-${columnIndex}-${virtualIndex}`} />);
+      nodes.push(
+        <Animated.View key={`gap-${columnIndex}-${virtualIndex}`} layout={ROW_LAYOUT}>
+          <BoardCardPlaceholder />
+        </Animated.View>
+      );
     }
 
     nodes.push(
-      <DraggableBoardCard
-        key={c.id}
-        ref={(el) => {
-          cardRefs.current[c.id] = el;
-        }}
-        card={c}
-        columnIndex={columnIndex}
-        cardIndex={originalIndex}
-        dragEnabled={draggingCardId === null || draggingCardId === c.id}
-        translateX={translateX}
-        translateY={translateY}
-        scale={scale}
-        isDraggingThis={draggingCardId === c.id}
-        hidden={expandedCardKey === `${columnIndex}-${originalIndex}`}
-        onPress={() => {
-          const node = cardRefs.current[c.id];
-          if (!node || !onCardPress) return;
-          node.measureInWindow((x, y, width, height) => {
-            onCardPress(originalIndex, { x, y, width, height });
-          });
-        }}
-        onDragBegin={onDragBegin}
-        onDragMove={onDragMove}
-        onDragEnd={onDragEnd}
-      />
+      <Animated.View key={c.id} layout={ROW_LAYOUT}>
+        <DraggableBoardCard
+          ref={(el) => {
+            cardRefs.current[c.id] = el;
+          }}
+          card={c}
+          columnIndex={columnIndex}
+          cardIndex={originalIndex}
+          dragEnabled={draggingCardId === null || draggingCardId === c.id}
+          translateX={translateX}
+          translateY={translateY}
+          scale={scale}
+          isDraggingThis={draggingCardId === c.id}
+          hidden={expandedCardKey === `${columnIndex}-${originalIndex}`}
+          onPress={() => {
+            const node = cardRefs.current[c.id];
+            if (!node || !onCardPress) return;
+            node.measureInWindow((x, y, width, height) => {
+              onCardPress(columnIndex, originalIndex, { x, y, width, height });
+            });
+          }}
+          onDragBegin={onDragBegin}
+          onDragMove={onDragMove}
+          onDragEnd={onDragEnd}
+        />
+      </Animated.View>
     );
 
     if (!isBeingDragged) {
@@ -137,7 +149,11 @@ export function BoardColumn({
   }
 
   if (insertAt === virtualIndex) {
-    nodes.push(<BoardCardPlaceholder key={`gap-${columnIndex}-tail-${virtualIndex}`} />);
+    nodes.push(
+      <Animated.View key={`gap-${columnIndex}-tail-${virtualIndex}`} layout={ROW_LAYOUT}>
+        <BoardCardPlaceholder />
+      </Animated.View>
+    );
   }
 
   return (
@@ -177,6 +193,8 @@ export function BoardColumn({
     </View>
   );
 }
+
+export const BoardColumn = memo(BoardColumnInner);
 
 const styles = StyleSheet.create({
   wrap: {

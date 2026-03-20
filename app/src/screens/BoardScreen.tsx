@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,11 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
-  LayoutAnimation,
   UIManager,
 } from 'react-native';
 import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, cancelAnimation } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import { BoardColumn } from '../components/BoardColumn';
@@ -95,6 +94,26 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
   const measureFnsRef = useRef<Record<number, () => void>>({});
   const draggingRef = useRef<DraggingState | null>(null);
   const hoverRef = useRef<{ col: number; insertIndex: number } | null>(null);
+  /** Batch hover React updates to one commit per frame (smoother than setState on every pan tick). */
+  const pendingHoverRef = useRef<{ col: number; insertIndex: number } | null>(null);
+  const hoverRafRef = useRef<number | null>(null);
+
+  const flushHoverRaf = useCallback(() => {
+    hoverRafRef.current = null;
+    const n = pendingHoverRef.current;
+    if (n == null) return;
+    setHoverTarget((prev) => {
+      if (prev != null && prev.col === n.col && prev.insertIndex === n.insertIndex) {
+        return prev;
+      }
+      return n;
+    });
+  }, []);
+
+  const scheduleHoverFlush = useCallback(() => {
+    if (hoverRafRef.current != null) return;
+    hoverRafRef.current = requestAnimationFrame(flushHoverRaf);
+  }, [flushHoverRaf]);
 
   useEffect(() => {
     draggingRef.current = dragging;
@@ -102,6 +121,26 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
   useEffect(() => {
     hoverRef.current = hoverTarget;
   }, [hoverTarget]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverRafRef.current != null) {
+        cancelAnimationFrame(hoverRafRef.current);
+      }
+    };
+  }, []);
+
+  const noopAddCard = useCallback(() => {}, []);
+
+  const columnScrollRefSetters = useMemo(
+    () =>
+      columns.map(
+        (_, i) => (ref: GHScrollViewRef | null) => {
+          columnScrollRefs.current[i] = ref;
+        }
+      ),
+    [columns.length]
+  );
 
   const isWeb = Platform.OS === 'web';
 
@@ -183,18 +222,13 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
     (absX: number, absY: number) => {
       lastAbsRef.current = { x: absX, y: absY };
       const next = computeHover(absX, absY);
-      setHoverTarget((prev) => {
-        if (next != null) {
-          if (prev != null && prev.col === next.col && prev.insertIndex === next.insertIndex) {
-            return prev;
-          }
-          return next;
-        }
-        // Finger left column bounds (gaps, overscroll): keep last slot so the gap doesn't blink away
-        return prev;
-      });
+      if (next != null) {
+        pendingHoverRef.current = next;
+        scheduleHoverFlush();
+      }
+      // Finger left column bounds: keep pendingHoverRef / hoverTarget unchanged (sticky)
     },
-    [computeHover]
+    [computeHover, scheduleHoverFlush]
   );
 
   const onDragBegin = useCallback(
@@ -223,17 +257,24 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
   );
 
   const onDragEnd = useCallback(() => {
+    if (hoverRafRef.current != null) {
+      cancelAnimationFrame(hoverRafRef.current);
+      hoverRafRef.current = null;
+    }
+    pendingHoverRef.current = null;
     const d = draggingRef.current;
     const h = hoverRef.current;
     if (d && h) {
-      LayoutAnimation.configureNext(
-        LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)
-      );
+      // No LayoutAnimation on drop — RN's native layout animation still feels springy/bouncy
+      // on Fabric even with type: linear; instant reorder is the only way to avoid that.
       setColumns((prev) => moveCardToHover(prev, d.cardId, d.fromCol, h.col, h.insertIndex));
     }
     draggingRef.current = null;
     setDragging(null);
     setHoverTarget(null);
+    cancelAnimation(translateX);
+    cancelAnimation(translateY);
+    cancelAnimation(scale);
     translateX.value = 0;
     translateY.value = 0;
     scale.value = 1;
@@ -335,11 +376,11 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
             columnIndex={i}
             title={col.title}
             cards={col.cards}
-            onAddCard={() => {}}
+            onAddCard={noopAddCard}
             expandedCardKey={expandedCardKey}
-            onCardPress={(cardIndex, layout) => handleCardPress(i, cardIndex, layout)}
+            onCardPress={handleCardPress}
             draggingCardId={dragging?.cardId ?? null}
-            hoverTarget={hoverTarget}
+            hoverInsertIndex={hoverTarget?.col === i ? hoverTarget.insertIndex : -1}
             onListLayout={onListLayout}
             onColumnScroll={onColumnScroll}
             translateX={translateX}
@@ -348,9 +389,7 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
             onDragBegin={onDragBegin}
             onDragMove={onDragMove}
             onDragEnd={onDragEnd}
-            onScrollViewRef={(ref) => {
-              columnScrollRefs.current[i] = ref;
-            }}
+            onScrollViewRef={columnScrollRefSetters[i]}
             registerColumnMeasure={registerColumnMeasure}
             unregisterColumnMeasure={unregisterColumnMeasure}
             listScrollEnabled={dragging === null}

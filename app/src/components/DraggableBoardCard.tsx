@@ -1,7 +1,7 @@
 import React, { useCallback, forwardRef, useRef, useMemo, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS, withSpring } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { BoardCard } from './BoardCard';
 import type { BoardCardData } from '../types/board';
@@ -129,18 +129,22 @@ export const DraggableBoardCard = forwardRef<View, DraggableBoardCardProps>(func
       /** Critical: default true cancels pan when finger leaves the card — drag would "stick" */
       .shouldCancelWhenOutside(false)
       .onStart(() => {
+        // Fresh gesture — avoid inheriting stale transforms if onDragEnd didn’t run.
+        translateX.value = 0;
+        translateY.value = 0;
+        scale.value = 1;
         runOnJS(notifyDragBegin)();
-        scale.value = withSpring(1.04, { damping: 18, stiffness: 340 });
+        // Instant lift scale — any timing animation can still be running on release and
+        // combine with native layout to feel like a spring.
+        scale.value = 1.04;
       })
       .onUpdate((e) => {
         translateX.value = e.translationX;
         translateY.value = e.translationY;
         runOnJS(notifyMove)(e.absoluteX, e.absoluteY);
       })
+      // Don’t zero transforms here — overlay follows shared values until BoardScreen onDragEnd.
       .onEnd(() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 400 });
-        translateX.value = withSpring(0, { damping: 24, stiffness: 420 });
-        translateY.value = withSpring(0, { damping: 24, stiffness: 420 });
         runOnJS(notifyEnd)();
       });
 
