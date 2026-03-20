@@ -4,6 +4,7 @@ import {
   View,
   Text,
   ScrollView,
+  RefreshControl,
   Platform,
   StyleSheet,
   type View as RNView,
@@ -12,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
 import { TabScreenChrome } from '../components/TabScreenChrome';
-import { ActivitiesHeader } from '../components/ActivitiesHeader';
+import { ActivitiesHeader, MOBILE_NAV_HEIGHT } from '../components/ActivitiesHeader';
 import { NeuListRowPressable, neuListRowCardBase } from '../components/NeuListRowPressable';
 import {
   NotificationExpandOverlay,
@@ -195,6 +196,7 @@ export default function MessagesScreen() {
   const contentPaddingTop = (isWeb ? 24 : 12) + ipadPad;
 
   const [expanded, setExpanded] = useState<ExpandedNotificationData | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const { messageFilter } = useMessageFilter();
   const sourceRowViewsRef = useRef<Record<string, RNView | null>>({});
 
@@ -241,6 +243,15 @@ export default function MessagesScreen() {
     setExpanded(data);
   }, []);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hapticLight();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  }, []);
+
+  const androidRefreshOffset = MOBILE_NAV_HEIGHT + insets.top;
+
   const scroll = (
     <ScrollView
       contentContainerStyle={{
@@ -254,6 +265,16 @@ export default function MessagesScreen() {
       }}
       showsVerticalScrollIndicator={false}
       bounces={Platform.OS === 'ios'}
+      overScrollMode={Platform.OS === 'android' ? 'never' : undefined}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#0a0a0a"
+          colors={['#0a0a0a']}
+          progressViewOffset={Platform.OS === 'android' ? androidRefreshOffset : undefined}
+        />
+      }
     >
       <Text style={styles.title}>Messages</Text>
       <Text style={styles.subtitle}>

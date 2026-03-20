@@ -14,6 +14,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -55,11 +56,15 @@ function BoardStyleButton({
         }
       }}
       onPressOut={() => {
-        offset.value = withTiming(0, { duration: PRESS_OUT });
+        cancelAnimation(offset);
+        offset.value = 0;
       }}
       style={styles.boardBtnWrap}
     >
-      <View style={[styles.boardBtnShadow, { backgroundColor: shadowColor }]} />
+      <View
+        style={[styles.boardBtnShadow, { backgroundColor: shadowColor }]}
+        pointerEvents="none"
+      />
       <Animated.View
         style={[
           styles.boardBtnFace,
@@ -250,6 +255,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: 28,
     gap: 12,
+    width: '100%',
+    overflow: 'hidden',
+    /** Room for neub shadow inside clip so it doesn’t paint past the card edge */
+    paddingBottom: SHIFT + 6,
   },
   boardBtnWrap: {
     position: 'relative',
@@ -257,6 +266,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     marginRight: SHIFT,
     marginBottom: SHIFT,
+    zIndex: 0,
   },
   boardBtnShadow: {
     position: 'absolute',
@@ -267,9 +277,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#000',
+    zIndex: 0,
   },
   boardBtnFace: {
     position: 'relative',
+    zIndex: 1,
+    elevation: 4,
     backgroundColor: '#fff',
     borderRadius: 14,
     borderWidth: 1,
