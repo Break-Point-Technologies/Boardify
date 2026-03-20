@@ -1,5 +1,6 @@
 export { Avatar } from './Avatar';
 export { ActivitiesHeader, ACTIVITIES_HEADER_HEIGHT, MOBILE_NAV_HEIGHT } from './ActivitiesHeader';
+export { GlassRoundIconButton } from './GlassRoundIconButton';
 export { AppTopNav } from './AppTopNav';
 export { TabScreenChrome } from './TabScreenChrome';
 export { WebTopNav, WEB_NAV_HEIGHT } from './WebTopNav';

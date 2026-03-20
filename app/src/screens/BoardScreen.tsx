@@ -8,6 +8,7 @@ import {
   Dimensions,
   UIManager,
 } from 'react-native';
+import { GlassRoundIconButton } from '../components/GlassRoundIconButton';
 import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, cancelAnimation } from 'react-native-reanimated';
@@ -332,22 +333,32 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        {onBack ? (
-          <TouchableOpacity
-            onPress={() => {
-              hapticLight();
-              onBack();
-            }}
-            style={styles.backBtn}
-            hitSlop={12}
-          >
-            <Feather name="arrow-left" size={24} color="#0a0a0a" />
-          </TouchableOpacity>
-        ) : null}
-        <Text style={styles.title} numberOfLines={1}>{boardName}</Text>
-        <TouchableOpacity onPress={() => hapticLight()} style={styles.menuBtn}>
-          <Feather name="more-horizontal" size={22} color="#0a0a0a" />
-        </TouchableOpacity>
+        <View style={styles.headerSide}>
+          {onBack ? (
+            <GlassRoundIconButton
+              icon="arrow-left"
+              size={22}
+              accessibilityLabel="Go back"
+              onPress={() => {
+                hapticLight();
+                onBack();
+              }}
+            />
+          ) : (
+            <View style={styles.headerSideSpacer} />
+          )}
+        </View>
+        <Text style={styles.title} numberOfLines={1}>
+          {boardName}
+        </Text>
+        <View style={[styles.headerSide, styles.headerSideEnd]}>
+          <GlassRoundIconButton
+            icon="plus"
+            size={23}
+            accessibilityLabel="Add to board"
+            onPress={() => hapticLight()}
+          />
+        </View>
       </View>
 
       <GHScrollView
@@ -447,21 +458,34 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+    zIndex: 20,
+    backgroundColor: '#f5f0e8',
+    overflow: 'visible',
   },
-  backBtn: {
-    padding: 4,
+  headerSide: {
+    width: 45,
+    alignItems: 'flex-start',
+    overflow: 'visible',
+    zIndex: 2,
+  },
+  headerSideEnd: {
+    alignItems: 'flex-end',
+  },
+  headerSideSpacer: {
+    width: 45,
+    height: 45,
   },
   title: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#0a0a0a',
-  },
-  menuBtn: {
-    padding: 4,
+    textAlign: 'center',
+    minWidth: 0,
+    paddingHorizontal: 8,
   },
   columnsScrollView: {
     flexGrow: 1,
