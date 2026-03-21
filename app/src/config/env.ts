@@ -38,8 +38,8 @@ export const ENV: EnvConfig = {
   DEV: __DEV__ || process.env.NODE_ENV === 'development',
 };
 
-const DEFAULT_PROD_API = 'https://api.boardify.app';
-const DEFAULT_PROD_APP_URL = 'https://boardify.app';
+const DEFAULT_PROD_API = 'https://api.boardify.mybreakpoint.app';
+const DEFAULT_PROD_APP_URL = 'https://boardify.mybreakpoint.app';
 
 if (!ENV.DEV) {
   const isLocal =

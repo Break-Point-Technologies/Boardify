@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.boardify",
+      "bundleIdentifier": "app.mybreakpoint.boardify",
       "backgroundColor": "#020617",
       "appleTeamId": "BZHS36ZMFQ",
       "splash": {
@@ -45,7 +45,7 @@
         "backgroundColor": "#000000",
         "barStyle": "light-content"
       },
-      "package": "app.boardify",
+      "package": "app.mybreakpoint.boardify",
       "usesCleartextTraffic": true,
       "permissions": [
         "INTERNET",
@@ -57,9 +57,9 @@
     },
     "backgroundColor": "#020617",
     "extra": {
-      "VITE_APP_URL": "https://boardify.app",
-      "VITE_API_BASE": "https://api.boardify.app",
-      "VITE_API_URL": "https://api.boardify.app",
+      "VITE_APP_URL": "https://boardify.mybreakpoint.app",
+      "VITE_API_BASE": "https://api.boardify.mybreakpoint.app",
+      "VITE_API_URL": "https://api.boardify.mybreakpoint.app",
       "GOOGLE_OAUTH_CLIENT_ID": "354354727384-vk1eh3798hef45m9rttpibu21plf0chn.apps.googleusercontent.com"
     }
   }

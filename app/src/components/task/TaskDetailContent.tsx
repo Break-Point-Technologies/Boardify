@@ -19,6 +19,7 @@ import type {
   ChecklistItem,
   TaskAttachment,
 } from '../../types/board';
+import { TaskDatetimeField } from './TaskDatetimeField';
 
 const SHIFT = 5;
 
@@ -48,6 +49,7 @@ type Props = {
 
 export function TaskDetailContent({ task, onChange }: Props) {
   const [memberPickerOpen, setMemberPickerOpen] = useState(false);
+  const [activeDateField, setActiveDateField] = useState<'start' | 'due' | null>(null);
 
   const labels = task.labels ?? [];
   const assignees = task.assignees ?? [];
@@ -201,32 +203,26 @@ export function TaskDetailContent({ task, onChange }: Props) {
         </Section>
 
         <Section title="Dates" icon="calendar">
-          <View style={styles.dateGrid}>
-            <View style={styles.dateField}>
-              <Text style={styles.dateLabel}>Start</Text>
-              <TextInput
-                value={task.startDate ?? ''}
-                onChangeText={(startDate) => setField('startDate', startDate || undefined)}
-                style={styles.dateInput}
-                placeholder="e.g. Mon, Mar 10"
-                placeholderTextColor="#888"
-              />
-            </View>
-            <View style={styles.dateField}>
-              <Text style={styles.dateLabel}>Due</Text>
-              <TextInput
-                value={task.dueDate ?? ''}
-                onChangeText={(dueDate) => setField('dueDate', dueDate || undefined)}
-                style={styles.dateInput}
-                placeholder="e.g. Fri, Mar 21"
-                placeholderTextColor="#888"
-              />
-            </View>
-          </View>
+          <TaskDatetimeField
+            fieldKey="start"
+            label="Start"
+            valueIso={task.startDate}
+            onChangeIso={(startDate) => setField('startDate', startDate)}
+            activeField={activeDateField}
+            onActiveChange={setActiveDateField}
+          />
+          <TaskDatetimeField
+            fieldKey="due"
+            label="Due"
+            valueIso={task.dueDate}
+            onChangeIso={(dueDate) => setField('dueDate', dueDate)}
+            activeField={activeDateField}
+            onActiveChange={setActiveDateField}
+            showDividerTop
+          />
         </Section>
 
         <Section title="Labels" icon="tag">
-          <Text style={styles.hint}>Tap to toggle — first label tints the card edge.</Text>
           <View style={styles.chipWrap}>
             {LABEL_PRESETS.map((l) => {
               const on = labels.some((x) => x.id === l.id);
@@ -618,29 +614,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#0a0a0a',
     fontWeight: '500',
-  },
-  dateGrid: {
-    gap: 12,
-  },
-  dateField: {},
-  dateLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#666',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dateInput: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0a0a0a',
-    backgroundColor: '#f5f0e8',
   },
   hint: {
     fontSize: 12,

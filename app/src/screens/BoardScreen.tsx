@@ -36,10 +36,11 @@ const INITIAL_COLUMNS: BoardColumnData[] = [
       {
         id: 'c-0-0',
         title: 'Review design mockups',
-        subtitle: 'Due Fri',
+        subtitle: 'Due soon',
         labelColor: '#F3D9B1',
         description: 'Walk through Figma — focus on nav and empty states.',
-        dueDate: 'Fri · EOD',
+        startDate: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+        dueDate: new Date(Date.now() + 3 * 86400000).toISOString(),
         labels: [{ id: 'lp-1', name: 'Design', color: '#F3D9B1' }],
         assignees: [{ id: 'm-1', name: 'Alex Kim', initials: 'AK' }],
         checklists: [

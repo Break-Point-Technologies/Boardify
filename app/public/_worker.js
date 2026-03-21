@@ -3,17 +3,17 @@ const AASA = {
     apps: [],
     details: [
       {
-        appIDs: ["BZHS36ZMFQ.app.boardify"],
+        appIDs: ["BZHS36ZMFQ.app.mybreakpoint.boardify"],
         components: [{ "/": "*", comment: "Match all URLs" }],
       },
       {
-        appID: "BZHS36ZMFQ.app.boardify",
+        appID: "BZHS36ZMFQ.app.mybreakpoint.boardify",
         paths: ["*"],
       },
     ],
   },
-  activitycontinuation: { apps: ["BZHS36ZMFQ.app.boardify"] },
-  webcredentials: { apps: ["BZHS36ZMFQ.app.boardify"] },
+  activitycontinuation: { apps: ["BZHS36ZMFQ.app.mybreakpoint.boardify"] },
+  webcredentials: { apps: ["BZHS36ZMFQ.app.mybreakpoint.boardify"] },
 };
 
 const ASSET_LINKS = [
@@ -24,7 +24,7 @@ const ASSET_LINKS = [
     ],
     target: {
       namespace: "android_app",
-      package_name: "app.boardify",
+      package_name: "app.mybreakpoint.boardify",
       sha256_cert_fingerprints: [
         "TODO:REPLACE_WITH_YOUR_SHA256_FINGERPRINT",
         "0F:41:0B:5D:17:53:35:C5:96:F2:D1:67:F4:DD:55:BA:40:A0:AB:2A:1A:6A:20:C9:B6:5B:B2:1C:AC:C8:A8:87"

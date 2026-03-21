@@ -148,6 +148,7 @@ module.exports = {
     newArchEnabled: true,
     plugins: [
       'expo-router',
+      '@react-native-community/datetimepicker',
       [
         '@react-native-google-signin/google-signin',
         {
@@ -173,7 +174,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'app.boardify',
+      bundleIdentifier: 'app.mybreakpoint.boardify',
       appleTeamId: 'BZHS36ZMFQ',
       backgroundColor: '#f5f0e8',
       buildNumber: buildNumber,
@@ -192,8 +193,8 @@ module.exports = {
         ],
       },
       associatedDomains: [
-        'applinks:boardify.app',
-        ...(isRelease ? [] : ['applinks:boardify.app?mode=developer']),
+        'applinks:boardify.mybreakpoint.app',
+        ...(isRelease ? [] : ['applinks:boardify.mybreakpoint.app?mode=developer']),
       ],
       entitlements: {
         'aps-environment': isRelease ? 'production' : 'development',
@@ -216,12 +217,12 @@ module.exports = {
         backgroundColor: '#f5f0e8',
         barStyle: 'dark-content'
       },
-      package: 'app.boardify',
+      package: 'app.mybreakpoint.boardify',
       intentFilters: [
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [{ scheme: 'https', host: 'boardify.app', pathPrefix: '/' }],
+          data: [{ scheme: 'https', host: 'boardify.mybreakpoint.app', pathPrefix: '/' }],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
