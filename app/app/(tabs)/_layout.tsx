@@ -2,7 +2,7 @@ import React from 'react';
 import { Platform, DynamicColorIOS, View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { WebTopNav } from '../../src/components';
+import { AppTopNav, WebTopNav } from '../../src/components';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
@@ -61,7 +61,7 @@ export default function TabsLayout() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.contentWrapper}>
+      <View style={styles.contentWrapper} collapsable={false}>
         <NativeTabs
           labelStyle={{
             color: tabBarLabelColor,
@@ -83,6 +83,8 @@ export default function TabsLayout() {
           ))}
         </NativeTabs>
       </View>
+      {/* Sibling of NativeTabs: SwiftUI Menu `Host` stays above tab UIScrollView layers. */}
+      <AppTopNav user={user} loading={loading} />
     </View>
   );
 }
@@ -94,5 +96,6 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
+    overflow: 'visible',
   },
 });

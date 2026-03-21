@@ -169,32 +169,18 @@ export function ContextMenu({
       </Section>
     );
 
-    const triggerWrapStyle = [styles.triggerWrapper, triggerWrapperStyle];
+    const triggerWrapStyle = [
+      styles.triggerWrapper,
+      styles.triggerWrapperIos,
+      triggerWrapperStyle,
+    ];
+    const hostSlotStyle = [styles.iosHostSlot];
 
     if (activationMethod === 'singlePress' && SwiftMenu) {
       return (
-        <Host colorScheme="light">
-          <SwiftMenu label={
-            <View
-              ref={triggerRef}
-              style={triggerWrapStyle}
-              collapsable={false}
-              {...(ANDROID_HW_TEXTURE ?? {})}
-            >
-              {trigger}
-            </View>
-          }>
-            {menuItems}
-          </SwiftMenu>
-        </Host>
-      );
-    }
-
-    if (SwiftContextMenu) {
-      return (
-        <Host colorScheme="light">
-          <SwiftContextMenu>
-            <SwiftContextMenu.Trigger>
+        <View style={styles.iosSwiftMenuLift} collapsable={false}>
+          <Host colorScheme="light" style={hostSlotStyle}>
+            <SwiftMenu label={
               <View
                 ref={triggerRef}
                 style={triggerWrapStyle}
@@ -203,12 +189,35 @@ export function ContextMenu({
               >
                 {trigger}
               </View>
-            </SwiftContextMenu.Trigger>
-            <SwiftContextMenu.Items>
+            }>
               {menuItems}
-            </SwiftContextMenu.Items>
-          </SwiftContextMenu>
-        </Host>
+            </SwiftMenu>
+          </Host>
+        </View>
+      );
+    }
+
+    if (SwiftContextMenu) {
+      return (
+        <View style={styles.iosSwiftMenuLift} collapsable={false}>
+          <Host colorScheme="light" style={hostSlotStyle}>
+            <SwiftContextMenu>
+              <SwiftContextMenu.Trigger>
+                <View
+                  ref={triggerRef}
+                  style={triggerWrapStyle}
+                  collapsable={false}
+                  {...(ANDROID_HW_TEXTURE ?? {})}
+                >
+                  {trigger}
+                </View>
+              </SwiftContextMenu.Trigger>
+              <SwiftContextMenu.Items>
+                {menuItems}
+              </SwiftContextMenu.Items>
+            </SwiftContextMenu>
+          </Host>
+        </View>
       );
     }
   }
@@ -284,13 +293,27 @@ export function ContextMenu({
 }
 
 const styles = StyleSheet.create({
+  iosSwiftMenuLift: {
+    zIndex: 50,
+    overflow: 'visible',
+    elevation: 0,
+  },
+  iosHostSlot: {
+    width: 45,
+    height: 45,
+    alignSelf: 'flex-start',
+    overflow: 'visible',
+  },
   triggerWrapper: {
     width: '100%',
     borderRadius: 22.5,
+    // Android / Modal path: clip avoids square halo behind rounded triggers.
     overflow: 'hidden',
     zIndex: 40,
-    // High elevation draws a rectangular shadow behind rounded views on Android; keep flat.
     elevation: 0,
+  },
+  triggerWrapperIos: {
+    overflow: 'visible',
   },
   androidMenuOverlay: {
     ...StyleSheet.absoluteFillObject,

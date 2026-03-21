@@ -37,14 +37,18 @@ export function AppTopNav({
 
 const styles = StyleSheet.create({
   bar: {
-    zIndex: 5000,
-    elevation: 24,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50_000,
+    elevation: 48,
     overflow: 'visible',
     backgroundColor: '#f5f0e8',
   },
   barInner: {
     flex: 1,
     overflow: 'visible',
-    zIndex: 5000,
+    zIndex: 50_000,
   },
 });

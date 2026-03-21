@@ -139,7 +139,14 @@ export function ActivitiesHeader({
           }
         >
           <View style={styles.homeRow}>
-            <View style={styles.homeSide}>
+            <View style={styles.homeTitleWrap}>
+              <Pressable onPress={goHome} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+                <Text style={titleStyle} numberOfLines={1}>
+                  Home
+                </Text>
+              </Pressable>
+            </View>
+            <View style={[styles.homeOrb, styles.homeOrbLeading]} pointerEvents="box-none">
               <ContextMenu
                 options={boardSortMenuOptions}
                 trigger={
@@ -153,16 +160,7 @@ export function ActivitiesHeader({
                 }
               />
             </View>
-
-            <View style={styles.homeTitleWrap}>
-              <Pressable onPress={goHome} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-                <Text style={titleStyle} numberOfLines={1}>
-                  Home
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.homeSide, { alignItems: 'flex-end' }]}>
+            <View style={[styles.homeOrb, styles.homeOrbTrailing]} pointerEvents="box-none">
               <Pressable
                 hitSlop={12}
                 accessibilityLabel="Create new board"
@@ -183,7 +181,12 @@ export function ActivitiesHeader({
           }
         >
           <View style={styles.homeRow}>
-            <View style={styles.homeSide}>
+            <View style={styles.homeTitleWrap}>
+              <Text style={titleStyle} numberOfLines={1}>
+                {tabTitle}
+              </Text>
+            </View>
+            <View style={[styles.homeOrb, styles.homeOrbLeading]} pointerEvents="box-none">
               {isMessagesTab ? (
                 <ContextMenu
                   options={messageFilterMenuOptions}
@@ -210,14 +213,6 @@ export function ActivitiesHeader({
                 </Pressable>
               )}
             </View>
-
-            <View style={styles.homeTitleWrap}>
-              <Text style={titleStyle} numberOfLines={1}>
-                {tabTitle}
-              </Text>
-            </View>
-
-            <View style={[styles.homeSide, { alignItems: 'flex-end' }]} />
           </View>
         </View>
       )}
@@ -254,24 +249,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#f5f0e8',
     overflow: 'visible',
-    zIndex: 1000,
+    zIndex: 5000,
   },
   homeRow: {
     flex: 1,
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  homeSide: {
-    width: 45,
-    alignItems: 'flex-start',
-    overflow: 'visible',
-    zIndex: 1,
+    justifyContent: 'center',
+    minHeight: ACTIVITIES_HEADER_HEIGHT,
   },
   homeTitleWrap: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     minWidth: 0,
+    zIndex: 0,
+    paddingHorizontal: 56,
+  },
+  homeOrb: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 45,
+    justifyContent: 'center',
+    zIndex: 20,
+    overflow: 'visible',
+  },
+  homeOrbLeading: {
+    left: 0,
+    alignItems: 'flex-start',
+  },
+  homeOrbTrailing: {
+    right: 0,
+    alignItems: 'flex-end',
   },
   glassContainer: {
     width: 45,
