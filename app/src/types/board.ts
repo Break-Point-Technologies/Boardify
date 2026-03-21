@@ -56,11 +56,8 @@ export type BoardCardData = {
   checklists?: TaskChecklist[];
   attachments?: TaskAttachment[];
   activity?: TaskActivityEntry[];
-  /** Saved work sessions */
   workLog?: TaskWorkLogEntry[];
-  /** Stopwatch: accumulated ms while paused */
   workTimerAccumMs?: number;
-  /** Stopwatch: Date.now() when current run started (if running) */
   workTimerRunStartedAtMs?: number;
 };
 

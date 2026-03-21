@@ -1,5 +1,3 @@
-/** Stored on cards as ISO 8601 (same as mbp Calendar). */
-
 export function parseTaskDateTime(iso?: string | null): Date {
   if (iso == null || iso === '') return new Date();
   const d = new Date(iso);
@@ -47,7 +45,6 @@ export function mergeTimePart(base: Date, timeFromPicker: Date): Date {
   return next;
 }
 
-/** `datetime-local` value in local timezone */
 export function isoToDatetimeLocalInput(iso?: string | null): string {
   if (!hasValidTaskIso(iso)) return '';
   const d = new Date(iso as string);

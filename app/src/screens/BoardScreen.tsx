@@ -9,6 +9,7 @@ import {
   UIManager,
 } from 'react-native';
 import { GlassRoundIconButton } from '../components/GlassRoundIconButton';
+import { ContextMenu } from '../components/ContextMenu';
 import {
   BoardGlassBottomBar,
   BOARD_GLASS_BOTTOM_BAR_CLEARANCE,
@@ -99,16 +100,28 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+export type BoardViewMode = 'board' | 'table' | 'calendar' | 'dashboard' | 'timeline';
+
+const BOARD_VIEW_MENU_ITEMS: { label: string; value: BoardViewMode }[] = [
+  { label: 'Board', value: 'board' },
+  { label: 'Table', value: 'table' },
+  { label: 'Calendar', value: 'calendar' },
+  { label: 'Dashboard', value: 'dashboard' },
+  { label: 'Timeline', value: 'timeline' },
+];
+
 interface BoardScreenProps {
   boardName?: string;
   onBack?: () => void;
-  /** Handlers for the floating glass bar (filter, notifications, settings, expand). */
+  /** Called when the user picks an item from the header filter (view mode) menu. */
+  onBoardViewSelect?: (mode: BoardViewMode) => void;
   glassBottomBar?: BoardGlassBottomBarProps;
 }
 
 export default function BoardScreen({
   boardName = 'My Board',
   onBack,
+  onBoardViewSelect,
   glassBottomBar,
 }: BoardScreenProps) {
   const insets = useSafeAreaInsets();
@@ -380,6 +393,18 @@ export default function BoardScreen({
     ? columns[dragging.fromCol]?.cards.find((c) => c.id === dragging.cardId)
     : null;
 
+  const boardViewMenuOptions = useMemo(
+    () =>
+      BOARD_VIEW_MENU_ITEMS.map(({ label, value }) => ({
+        label,
+        value,
+        onPress: () => {
+          onBoardViewSelect?.(value);
+        },
+      })),
+    [onBoardViewSelect]
+  );
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -402,11 +427,17 @@ export default function BoardScreen({
           {boardName}
         </Text>
         <View style={[styles.headerSide, styles.headerSideEnd]}>
-          <GlassRoundIconButton
-            icon="plus"
-            size={23}
-            accessibilityLabel="Add to board"
-            onPress={() => hapticLight()}
+          <ContextMenu
+            options={boardViewMenuOptions}
+            trigger={
+              <GlassRoundIconButton
+                icon="filter"
+                size={23}
+                accessibilityLabel="Board view"
+                onPress={() => {}}
+              />
+            }
+            triggerWrapperStyle={styles.headerFilterMenuTrigger}
           />
         </View>
       </View>
@@ -533,6 +564,10 @@ const styles = StyleSheet.create({
   },
   headerSideEnd: {
     alignItems: 'flex-end',
+  },
+  headerFilterMenuTrigger: {
+    width: 45,
+    alignSelf: 'flex-end',
   },
   headerSideSpacer: {
     width: 45,

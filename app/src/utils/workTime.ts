@@ -1,4 +1,3 @@
-/** Format ms as H:MM:SS or M:SS for stopwatch display */
 export function formatStopwatchMs(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(totalSec / 3600);
@@ -10,7 +9,6 @@ export function formatStopwatchMs(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** Short human total e.g. "2h 15m", "45 min" — rounds to nearest minute (good for log rows). */
 export function formatLoggedTotalMs(ms: number): string {
   if (ms <= 0) return '0 min';
   const mins = Math.round(ms / 60000);
@@ -20,10 +18,6 @@ export function formatLoggedTotalMs(ms: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
-/**
- * Header total: uses floor seconds (no rounding to whole minutes) so the value
- * moves every second while the stopwatch runs.
- */
 export function formatTotalTrackedBanner(ms: number): string {
   const t = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(t / 3600);

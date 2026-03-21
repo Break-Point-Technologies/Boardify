@@ -38,7 +38,6 @@ const closeConfig = {
 
 export type CardLayout = { x: number; y: number; width: number; height: number };
 
-/** Indices + layout for expand animation; live card data comes from `card` prop. */
 export type ExpandedCardLayout = {
   layout: CardLayout;
   columnIndex: number;

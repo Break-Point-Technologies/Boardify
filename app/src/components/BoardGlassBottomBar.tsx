@@ -6,7 +6,6 @@ import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'ex
 import { hapticLight } from '../utils/haptics';
 import { GlassRoundIconButton } from './GlassRoundIconButton';
 
-/** Extra scroll padding so column content clears the floating bar (buttons + margins). */
 export const BOARD_GLASS_BOTTOM_BAR_CLEARANCE = 96;
 
 const ICON_COLOR = '#0a0a0a';

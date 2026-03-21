@@ -16,10 +16,8 @@ function uid() {
   return `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** RN Web often drops Pressable backgroundColor; cursor helps affordance. */
 const WEB_POINTER = Platform.OS === 'web' ? ({ cursor: 'pointer' } as const) : {};
 
-/** Neubrutalist offset shadow — matches Section cards in TaskDetailContent */
 const SHIFT = 5;
 
 type Props = {
@@ -43,7 +41,6 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
     return () => clearInterval(id);
   }, [running]);
 
-  /** Current run only — pausing logs this segment and clears the display. */
   const sessionMs = useMemo(() => {
     const start = task.workTimerRunStartedAtMs;
     if (start == null) return 0;
@@ -55,7 +52,6 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
     [task.workLog]
   );
 
-  /** Logged sessions + active run (until you pause). */
   const totalTrackedMs = loggedFromEntriesMs + sessionMs;
 
   const startPause = useCallback(() => {
@@ -425,7 +421,6 @@ const styles = StyleSheet.create({
   neuBtnFaceDisabled: {
     backgroundColor: '#f0f0f0',
   },
-  /** Face slides toward the offset shadow — same idea as tapping a board card */
   neuBtnFacePressed: {
     transform: [{ translateX: SHIFT }, { translateY: SHIFT }],
   },
