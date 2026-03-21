@@ -3,7 +3,12 @@ import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { BoardCardData, TaskWorkLogEntry } from '../../types/board';
 import { hapticLight } from '../../utils/haptics';
-import { formatStopwatchMs, formatLoggedTotalMs, durationFromIsoRange } from '../../utils/workTime';
+import {
+  formatStopwatchMs,
+  formatLoggedTotalMs,
+  formatTotalTrackedBanner,
+  durationFromIsoRange,
+} from '../../utils/workTime';
 import { formatTaskDateTimeDisplay, hasValidTaskIso } from '../../utils/taskDateTime';
 import { TaskDatetimeField, type TaskDatetimeFieldKey } from './TaskDatetimeField';
 
@@ -28,6 +33,7 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
   const [tick, setTick] = useState(0);
   const [manualStartIso, setManualStartIso] = useState<string | undefined>();
   const [manualEndIso, setManualEndIso] = useState<string | undefined>();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const running = task.workTimerRunStartedAtMs != null;
 
@@ -37,46 +43,60 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
     return () => clearInterval(id);
   }, [running]);
 
+  /** Current run only — pausing logs this segment and clears the display. */
   const sessionMs = useMemo(() => {
-    const base = task.workTimerAccumMs ?? 0;
     const start = task.workTimerRunStartedAtMs;
-    if (start == null) return base;
-    return base + (Date.now() - start);
-  }, [task.workTimerAccumMs, task.workTimerRunStartedAtMs, tick]);
+    if (start == null) return 0;
+    return Date.now() - start;
+  }, [task.workTimerRunStartedAtMs, tick]);
 
   const loggedFromEntriesMs = useMemo(
     () => (task.workLog ?? []).reduce((a, e) => a + e.durationMs, 0),
     [task.workLog]
   );
 
-  /** Manual log + current stopwatch (no separate “save” step). */
+  /** Logged sessions + active run (until you pause). */
   const totalTrackedMs = loggedFromEntriesMs + sessionMs;
-
-  const patchTimer = useCallback(
-    (partial: Pick<BoardCardData, 'workTimerAccumMs' | 'workTimerRunStartedAtMs'>) => {
-      onChange({ ...task, ...partial });
-    },
-    [task, onChange]
-  );
 
   const startPause = useCallback(() => {
     hapticLight();
     if (running) {
-      patchTimer({
-        workTimerAccumMs: sessionMs,
+      const start = task.workTimerRunStartedAtMs;
+      if (start == null) return;
+      const segmentMs = Date.now() - start;
+      const nextLog = [...(task.workLog ?? [])];
+      if (segmentMs >= 1000) {
+        const entry: TaskWorkLogEntry = {
+          id: uid(),
+          durationMs: segmentMs,
+          source: 'stopwatch',
+          createdAtIso: new Date().toISOString(),
+        };
+        nextLog.push(entry);
+      }
+      onChange({
+        ...task,
+        workLog: nextLog,
+        workTimerAccumMs: 0,
         workTimerRunStartedAtMs: undefined,
       });
     } else {
-      patchTimer({
+      onChange({
+        ...task,
+        workTimerAccumMs: 0,
         workTimerRunStartedAtMs: Date.now(),
       });
     }
-  }, [running, sessionMs, patchTimer]);
+  }, [running, task, onChange]);
 
   const resetTimer = useCallback(() => {
     hapticLight();
-    patchTimer({ workTimerAccumMs: 0, workTimerRunStartedAtMs: undefined });
-  }, [patchTimer]);
+    onChange({
+      ...task,
+      workTimerAccumMs: 0,
+      workTimerRunStartedAtMs: undefined,
+    });
+  }, [task, onChange]);
 
   const addManualEntry = useCallback(() => {
     if (!hasValidTaskIso(manualStartIso) || !hasValidTaskIso(manualEndIso)) return;
@@ -138,7 +158,9 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
   return (
     <View>
       <View style={styles.totalBanner}>
-        <Text style={styles.totalValue}>{formatLoggedTotalMs(totalTrackedMs)}</Text>
+        <Text style={styles.totalValue} numberOfLines={2} adjustsFontSizeToFit>
+          {formatTotalTrackedBanner(totalTrackedMs)}
+        </Text>
         <Text style={styles.totalCaption}>Total time on this card</Text>
       </View>
 
@@ -242,27 +264,44 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
 
       {log.length > 0 ? (
         <View style={styles.logBlock}>
-          <Text style={styles.logHeading}>History</Text>
-          {log
-            .slice()
-            .reverse()
-            .map((e) => (
-              <View key={e.id} style={styles.logRow}>
-                <View style={styles.logMeta}>
-                  <Text style={styles.logDuration}>{formatLoggedTotalMs(e.durationMs)}</Text>
-                  <Text style={styles.logSub} numberOfLines={2}>
-                    {e.source === 'stopwatch'
-                      ? 'Timer'
-                      : e.startIso && e.endIso
-                        ? `${formatTaskDateTimeDisplay(e.startIso)} → ${formatTaskDateTimeDisplay(e.endIso)}`
-                        : 'Manual'}
-                  </Text>
-                </View>
-                <Pressable onPress={() => removeEntry(e.id)} hitSlop={10} style={styles.logTrash}>
-                  <Feather name="trash-2" size={17} color="#b91c1c" />
-                </Pressable>
-              </View>
-            ))}
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              setHistoryOpen((o) => !o);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={historyOpen ? 'Collapse history' : `Expand history, ${log.length} entries`}
+            style={({ pressed }) => [styles.logHeaderPressable, pressed && { opacity: 0.85 }]}
+          >
+            <View style={styles.logHeaderTitleRow}>
+              <Text style={styles.logHeading}>
+                History <Text style={styles.logCount}>({log.length})</Text>
+              </Text>
+              <Feather name={historyOpen ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
+            </View>
+          </Pressable>
+          {historyOpen
+            ? log
+                .slice()
+                .reverse()
+                .map((e) => (
+                  <View key={e.id} style={styles.logRow}>
+                    <View style={styles.logMeta}>
+                      <Text style={styles.logDuration}>{formatTotalTrackedBanner(e.durationMs)}</Text>
+                      <Text style={styles.logSub} numberOfLines={2}>
+                        {e.source === 'stopwatch'
+                          ? `Stopwatch · ${formatTaskDateTimeDisplay(e.createdAtIso)}`
+                          : e.startIso && e.endIso
+                            ? `${formatTaskDateTimeDisplay(e.startIso)} → ${formatTaskDateTimeDisplay(e.endIso)}`
+                            : 'Manual'}
+                      </Text>
+                    </View>
+                    <Pressable onPress={() => removeEntry(e.id)} hitSlop={10} style={styles.logTrash}>
+                      <Feather name="trash-2" size={17} color="#b91c1c" />
+                    </Pressable>
+                  </View>
+                ))
+            : null}
         </View>
       ) : null}
     </View>
@@ -467,13 +506,26 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 4,
   },
+  logHeaderPressable: {
+    paddingVertical: 6,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+  },
+  logHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   logHeading: {
     fontSize: 12,
     fontWeight: '800',
     color: '#888',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 8,
+  },
+  logCount: {
+    fontWeight: '700',
+    color: '#aaa',
   },
   logRow: {
     flexDirection: 'row',

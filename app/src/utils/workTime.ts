@@ -10,7 +10,7 @@ export function formatStopwatchMs(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** Short human total e.g. "2h 15m", "45 min" */
+/** Short human total e.g. "2h 15m", "45 min" — rounds to nearest minute (good for log rows). */
 export function formatLoggedTotalMs(ms: number): string {
   if (ms <= 0) return '0 min';
   const mins = Math.round(ms / 60000);
@@ -18,6 +18,25 @@ export function formatLoggedTotalMs(ms: number): string {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+/**
+ * Header total: uses floor seconds (no rounding to whole minutes) so the value
+ * moves every second while the stopwatch runs.
+ */
+export function formatTotalTrackedBanner(ms: number): string {
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  if (t === 0) return '0 min';
+  if (h > 0) {
+    return s > 0 ? `${h}h ${m}m ${s}s` : `${h}h ${m}m`;
+  }
+  if (m > 0) {
+    return s > 0 ? `${m}m ${s}s` : `${m} min`;
+  }
+  return `${s}s`;
 }
 
 export function durationFromIsoRange(startIso: string, endIso: string): number | null {

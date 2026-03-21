@@ -236,6 +236,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
         </Section>
 
         <Section title="Labels" icon="tag">
+          <Text style={styles.labelHint}>Tap a label to turn it on or off.</Text>
           <View style={styles.chipWrap}>
             {LABEL_PRESETS.map((l) => {
               const on = labels.some((x) => x.id === l.id);
@@ -243,13 +244,23 @@ export function TaskDetailContent({ task, onChange }: Props) {
                 <Pressable
                   key={l.id}
                   onPress={() => toggleLabel(l)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                  accessibilityLabel={`${l.name}${on ? ', selected' : ''}`}
                   style={({ pressed }) => [
                     styles.chip,
-                    { backgroundColor: on ? l.color : '#f3f3f3', borderColor: '#000' },
-                    pressed && { opacity: 0.88 },
+                    on ? [styles.chipOn, { backgroundColor: l.color }] : styles.chipOff,
+                    pressed && styles.chipPressed,
                   ]}
                 >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{l.name}</Text>
+                  {on ? (
+                    <View style={styles.chipCheck}>
+                      <Feather name="check" size={14} color="#0a0a0a" />
+                    </View>
+                  ) : null}
+                  <Text style={[styles.chipText, on && styles.chipTextOn]} numberOfLines={1}>
+                    {l.name}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -734,25 +745,65 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     lineHeight: 16,
   },
+  labelHint: {
+    fontSize: 13,
+    color: '#888',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
   chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
+    rowGap: 10,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingRight: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#000',
+    marginRight: 0,
+    marginBottom: 0,
+  },
+  chipOff: {
+    backgroundColor: '#f3f3f3',
+  },
+  chipOn: {
+    borderWidth: 2,
+    paddingVertical: 9,
+    paddingHorizontal: 11,
+    paddingRight: 13,
+  },
+  chipPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
+  },
+  chipCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.65)',
+    borderWidth: 1,
+    borderColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
   chipText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#333',
+    flexShrink: 1,
   },
   chipTextOn: {
     color: '#0a0a0a',
+    fontWeight: '800',
   },
   memberRow: {
     flexDirection: 'row',
