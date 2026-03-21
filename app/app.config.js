@@ -202,6 +202,7 @@ module.exports = {
       },
     },
     android: {
+      softwareKeyboardLayoutMode: 'pan',
       adaptiveIcon: {
         foregroundImage: './assets/icon-foreground-android.png',
         backgroundColor: '#f5f0e8'
