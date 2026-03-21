@@ -17,7 +17,7 @@ import { hapticLight } from '../utils/haptics';
 import { BoardColumn } from '../components/BoardColumn';
 import {
   BoardCardExpandOverlay,
-  type ExpandedCardData,
+  type ExpandedCardLayout,
 } from '../components/BoardCardExpandOverlay';
 import { BoardCard } from '../components/BoardCard';
 import type { BoardCardData, BoardColumnData } from '../types/board';
@@ -33,7 +33,31 @@ const INITIAL_COLUMNS: BoardColumnData[] = [
   {
     title: 'To Do',
     cards: [
-      { id: 'c-0-0', title: 'Review design mockups', subtitle: 'Due Fri', labelColor: '#F3D9B1' },
+      {
+        id: 'c-0-0',
+        title: 'Review design mockups',
+        subtitle: 'Due Fri',
+        labelColor: '#F3D9B1',
+        description: 'Walk through Figma — focus on nav and empty states.',
+        dueDate: 'Fri · EOD',
+        labels: [{ id: 'lp-1', name: 'Design', color: '#F3D9B1' }],
+        assignees: [{ id: 'm-1', name: 'Alex Kim', initials: 'AK' }],
+        checklists: [
+          {
+            id: 'cl-1',
+            title: 'Before review',
+            items: [
+              { id: 'i1', text: 'Export PDFs', done: true },
+              { id: 'i2', text: 'List open questions', done: false },
+            ],
+          },
+        ],
+        attachments: [{ id: 'a1', name: 'Mockups.pdf', subtitle: '2 MB' }],
+        activity: [
+          { id: 'act1', text: 'Alex moved this card from In progress', at: '2h ago' },
+          { id: 'act2', text: 'You created this card', at: 'Yesterday' },
+        ],
+      },
       { id: 'c-0-1', title: 'Sync with backend API', labelColor: '#a5d6a5' },
       { id: 'c-0-2', title: 'Update onboarding flow' },
     ],
@@ -77,7 +101,7 @@ interface BoardScreenProps {
 export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScreenProps) {
   const insets = useSafeAreaInsets();
   const [columns, setColumns] = useState<BoardColumnData[]>(INITIAL_COLUMNS);
-  const [expanded, setExpanded] = useState<ExpandedCardData | null>(null);
+  const [expanded, setExpanded] = useState<ExpandedCardLayout | null>(null);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [hoverTarget, setHoverTarget] = useState<{ col: number; insertIndex: number } | null>(null);
 
@@ -142,6 +166,23 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
 
   const noopAddCard = useCallback(() => {}, []);
 
+  const handleUpdateExpandedCard = useCallback(
+    (next: BoardCardData) => {
+      if (!expanded) return;
+      const { columnIndex: ci, cardIndex: idx } = expanded;
+      setColumns((prev) =>
+        prev.map((col, i) => {
+          if (i !== ci) return col;
+          return {
+            ...col,
+            cards: col.cards.map((c, j) => (j === idx ? next : c)),
+          };
+        })
+      );
+    },
+    [expanded]
+  );
+
   const columnScrollRefSetters = useMemo(
     () =>
       columns.map(
@@ -164,9 +205,6 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
       const card = col?.cards[cardIndex];
       if (!col || !card) return;
       setExpanded({
-        title: card.title,
-        subtitle: card.subtitle,
-        labelColor: card.labelColor,
         columnTitle: col.title,
         layout: {
           x: Math.round(layout.x),
@@ -444,7 +482,12 @@ export default function BoardScreen({ boardName = 'My Board', onBack }: BoardScr
       ) : null}
 
       {expanded ? (
-        <BoardCardExpandOverlay data={expanded} onClose={() => setExpanded(null)} />
+        <BoardCardExpandOverlay
+          layoutInfo={expanded}
+          card={columns[expanded.columnIndex].cards[expanded.cardIndex]}
+          onUpdateCard={handleUpdateExpandedCard}
+          onClose={() => setExpanded(null)}
+        />
       ) : null}
     </View>
   );

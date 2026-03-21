@@ -5,9 +5,9 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { WebTopNav } from '../../src/components';
 import { useAuth } from '../../src/contexts/AuthContext';
 
+const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
 const BOARDS_TAB_ICON = require('../../assets/icons/board-tab.png');
 const MESSAGES_TAB_ICON = require('../../assets/icons/messages-tab.png');
-const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
 
 const TabIcon = NativeTabs.Trigger.Icon;
 const TabLabel = NativeTabs.Trigger.Label;

@@ -20,11 +20,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
-
-const LIST_TITLE_SIZE = 14;
-const LIST_TITLE_LH = 18;
-const DETAIL_TITLE_SIZE = 22;
-const DETAIL_TITLE_LH = 28;
+import type { BoardCardData } from '../types/board';
+import { TaskDetailContent } from './task/TaskDetailContent';
 
 const CARD_SHIFT = 4;
 const LIST_CARD_PAD_V = 10;
@@ -41,22 +38,27 @@ const closeConfig = {
 
 export type CardLayout = { x: number; y: number; width: number; height: number };
 
-export type ExpandedCardData = {
-  title: string;
-  subtitle?: string;
-  labelColor?: string;
-  columnTitle: string;
+/** Indices + layout for expand animation; live card data comes from `card` prop. */
+export type ExpandedCardLayout = {
   layout: CardLayout;
   columnIndex: number;
   cardIndex: number;
+  columnTitle: string;
 };
 
 type Props = {
-  data: ExpandedCardData;
+  layoutInfo: ExpandedCardLayout;
+  card: BoardCardData;
+  onUpdateCard: (next: BoardCardData) => void;
   onClose: () => void;
 };
 
-export function BoardCardExpandOverlay({ data, onClose }: Props) {
+export function BoardCardExpandOverlay({
+  layoutInfo,
+  card,
+  onUpdateCard,
+  onClose,
+}: Props) {
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -69,20 +71,22 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
   const th = useSharedValue(0);
 
   useEffect(() => {
-    ox.value = data.layout.x;
-    oy.value = data.layout.y;
-    ow.value = data.layout.width;
-    oh.value = data.layout.height;
+    ox.value = layoutInfo.layout.x;
+    oy.value = layoutInfo.layout.y;
+    ow.value = layoutInfo.layout.width;
+    oh.value = layoutInfo.layout.height;
     tw.value = screenW;
     th.value = screenH;
     progress.value = 0;
     progress.value = withTiming(1, openConfig);
   }, [
-    data.layout.x,
-    data.layout.y,
-    data.layout.width,
-    data.layout.height,
-    data.title,
+    layoutInfo.layout.x,
+    layoutInfo.layout.y,
+    layoutInfo.layout.width,
+    layoutInfo.layout.height,
+    layoutInfo.columnIndex,
+    layoutInfo.cardIndex,
+    card.id,
     screenW,
     screenH,
     ox,
@@ -182,14 +186,6 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     };
   });
 
-  const detailTitleStyle = useAnimatedStyle(() => {
-    const t = progress.value;
-    return {
-      fontSize: interpolate(t, [0, 1], [LIST_TITLE_SIZE, DETAIL_TITLE_SIZE], Extrapolation.CLAMP),
-      lineHeight: interpolate(t, [0, 1], [LIST_TITLE_LH, DETAIL_TITLE_LH], Extrapolation.CLAMP),
-    };
-  });
-
   const detailBodyStyle = useAnimatedStyle(() => {
     const t = progress.value;
     const bottomPad = Math.max(insets.bottom, 24);
@@ -200,21 +196,13 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
     };
   });
 
-  const detailSubtitleMorphStyle = useAnimatedStyle(() => {
-    const t = progress.value;
-    return {
-      fontSize: interpolate(t, [0, 1], [12, 15], Extrapolation.CLAMP),
-      lineHeight: interpolate(t, [0, 1], [16, 20], Extrapolation.CLAMP),
-      marginTop: 4,
-    };
-  });
-
   const detailPlaceholderWrapStyle = useAnimatedStyle(() => {
     const t = progress.value;
     return {
       opacity: interpolate(t, [0, 0.52, 0.68, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
-      maxHeight: interpolate(t, [0, 0.48, 0.62, 1], [0, 0, 320, 800], Extrapolation.CLAMP),
-      marginTop: interpolate(t, [0, 0.55, 0.75, 1], [0, 0, 12, 20], Extrapolation.CLAMP),
+      flex: 1,
+      minHeight: interpolate(t, [0, 0.48, 0.62, 1], [0, 0, 200, 400], Extrapolation.CLAMP),
+      marginTop: interpolate(t, [0, 0.55, 0.75, 1], [0, 0, 8, 12], Extrapolation.CLAMP),
       overflow: 'hidden',
       transform: [
         {
@@ -252,42 +240,29 @@ export function BoardCardExpandOverlay({ data, onClose }: Props) {
               style={[
                 styles.cardFace,
                 cardOutlineStyle,
-                data.labelColor
-                  ? { borderLeftWidth: 4, borderLeftColor: data.labelColor }
+                card.labelColor
+                  ? { borderLeftWidth: 4, borderLeftColor: card.labelColor }
                   : undefined,
               ]}
             >
-            <Animated.View style={[styles.cardFaceHeader, headerPaddingStyle]}>
-              <Text style={styles.columnBadge} numberOfLines={1}>
-                {data.columnTitle}
-              </Text>
-              <Pressable
-                onPress={handleClose}
-                hitSlop={12}
-                style={styles.closeBtn}
-                accessibilityLabel="Close"
-              >
-                <Feather name="x" size={22} color="#0a0a0a" />
-              </Pressable>
-            </Animated.View>
-            <Animated.View style={[styles.detailBody, detailBodyStyle]}>
-              <Animated.Text style={[styles.detailTitleBase, detailTitleStyle]} numberOfLines={2}>
-                {data.title}
-              </Animated.Text>
-              {data.subtitle ? (
-                <Animated.Text
-                  style={[styles.detailSubtitleBase, detailSubtitleMorphStyle]}
-                  numberOfLines={1}
-                >
-                  {data.subtitle}
-                </Animated.Text>
-              ) : null}
-              <Animated.View style={detailPlaceholderWrapStyle}>
-                <Text style={styles.detailPlaceholder}>
-                  Add description, checklist, and more — coming soon.
+              <Animated.View style={[styles.cardFaceHeader, headerPaddingStyle]}>
+                <Text style={styles.columnBadge} numberOfLines={1}>
+                  {layoutInfo.columnTitle}
                 </Text>
+                <Pressable
+                  onPress={handleClose}
+                  hitSlop={12}
+                  style={styles.closeBtn}
+                  accessibilityLabel="Close"
+                >
+                  <Feather name="x" size={22} color="#0a0a0a" />
+                </Pressable>
               </Animated.View>
-            </Animated.View>
+              <Animated.View style={[styles.detailBody, detailBodyStyle]}>
+                <Animated.View style={[styles.detailScrollWrap, detailPlaceholderWrapStyle]}>
+                  <TaskDetailContent task={card} onChange={onUpdateCard} />
+                </Animated.View>
+              </Animated.View>
             </Animated.View>
           </Animated.View>
         </Animated.View>
@@ -330,18 +305,10 @@ const styles = StyleSheet.create({
   },
   detailBody: {
     flex: 1,
+    minHeight: 0,
   },
-  detailTitleBase: {
-    fontWeight: '600',
-    color: '#0a0a0a',
-  },
-  detailSubtitleBase: {
-    color: '#666',
-    fontWeight: '400',
-  },
-  detailPlaceholder: {
-    fontSize: 14,
-    color: '#999',
-    lineHeight: 20,
+  detailScrollWrap: {
+    flex: 1,
+    minHeight: 0,
   },
 });
