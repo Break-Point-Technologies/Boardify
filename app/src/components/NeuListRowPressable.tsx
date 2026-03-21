@@ -36,9 +36,6 @@ export const NeuListRowPressable = forwardRef<RNView, Props>(function NeuListRow
     <Pressable onPress={onPress} style={styles.wrap} onPressIn={() => {
       offset.value = withTiming(SHIFT, { duration: PRESS_DURATION });
     }} onPressOut={() => {
-      // Snap back immediately so measureInWindow (runs in onPress right after) sees the true
-      // rest frame. A timed release here leaves the card shifted ~5px when measured — the expand
-      // overlay then closes to that wrong rect and jumps when the real row appears unpressed.
       cancelAnimation(offset);
       offset.value = 0;
     }}>
