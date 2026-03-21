@@ -24,15 +24,15 @@ import {
   datetimeLocalInputToIso,
 } from '../../utils/taskDateTime';
 
-type FieldKey = 'start' | 'due';
+export type TaskDatetimeFieldKey = 'start' | 'due' | 'workManualStart' | 'workManualEnd';
 
 type Props = {
-  fieldKey: FieldKey;
+  fieldKey: TaskDatetimeFieldKey;
   label: string;
   valueIso?: string;
   onChangeIso: (iso: string | undefined) => void;
-  activeField: FieldKey | null;
-  onActiveChange: (key: FieldKey | null) => void;
+  activeField: TaskDatetimeFieldKey | null;
+  onActiveChange: (key: TaskDatetimeFieldKey | null) => void;
   showDividerTop?: boolean;
 };
 

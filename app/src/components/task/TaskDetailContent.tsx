@@ -19,7 +19,8 @@ import type {
   ChecklistItem,
   TaskAttachment,
 } from '../../types/board';
-import { TaskDatetimeField } from './TaskDatetimeField';
+import { TaskDatetimeField, type TaskDatetimeFieldKey } from './TaskDatetimeField';
+import { TaskWorkTimeSection } from './TaskWorkTimeSection';
 
 const SHIFT = 5;
 const MEMBERS_SCROLL_PADDING = 12;
@@ -50,7 +51,7 @@ type Props = {
 
 export function TaskDetailContent({ task, onChange }: Props) {
   const [memberPickerOpen, setMemberPickerOpen] = useState(false);
-  const [activeDateField, setActiveDateField] = useState<'start' | 'due' | null>(null);
+  const [activeDateField, setActiveDateField] = useState<TaskDatetimeFieldKey | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const membersSectionYRef = useRef(0);
 
@@ -222,6 +223,15 @@ export function TaskDetailContent({ task, onChange }: Props) {
             activeField={activeDateField}
             onActiveChange={setActiveDateField}
             showDividerTop
+          />
+        </Section>
+
+        <Section title="Time tracked" icon="clock">
+          <TaskWorkTimeSection
+            task={task}
+            onChange={onChange}
+            activeField={activeDateField}
+            onActiveChange={setActiveDateField}
           />
         </Section>
 

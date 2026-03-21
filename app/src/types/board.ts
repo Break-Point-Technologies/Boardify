@@ -34,6 +34,15 @@ export type TaskActivityEntry = {
   at: string;
 };
 
+export type TaskWorkLogEntry = {
+  id: string;
+  durationMs: number;
+  source: 'stopwatch' | 'manual';
+  startIso?: string;
+  endIso?: string;
+  createdAtIso: string;
+};
+
 export type BoardCardData = {
   id: string;
   title: string;
@@ -47,6 +56,12 @@ export type BoardCardData = {
   checklists?: TaskChecklist[];
   attachments?: TaskAttachment[];
   activity?: TaskActivityEntry[];
+  /** Saved work sessions */
+  workLog?: TaskWorkLogEntry[];
+  /** Stopwatch: accumulated ms while paused */
+  workTimerAccumMs?: number;
+  /** Stopwatch: Date.now() when current run started (if running) */
+  workTimerRunStartedAtMs?: number;
 };
 
 export type BoardColumnData = {
