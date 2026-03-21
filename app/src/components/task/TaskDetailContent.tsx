@@ -55,6 +55,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const membersSectionYRef = useRef(0);
   const checklistsSectionYRef = useRef(0);
+  const attachmentsSectionYRef = useRef(0);
 
   const labels = task.labels ?? [];
   const assignees = task.assignees ?? [];
@@ -171,6 +172,18 @@ export function TaskDetailContent({ task, onChange }: Props) {
     });
   }, []);
 
+  const scrollToAttachments = useCallback(() => {
+    hapticLight();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, attachmentsSectionYRef.current - MEMBERS_SCROLL_PADDING),
+          animated: true,
+        });
+      });
+    });
+  }, []);
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -203,7 +216,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
         >
           <QuickChip icon="users" label="Assign" onPress={toggleMemberPickerFromQuickAdd} />
           <QuickChip icon="check-square" label="Checklist" onPress={scrollToChecklists} />
-          <QuickChip icon="paperclip" label="Attach" onPress={addAttachment} />
+          <QuickChip icon="paperclip" label="Attach" onPress={scrollToAttachments} />
         </ScrollView>
         <Text style={styles.quickHint}>Dates, labels, and more — in the sections below.</Text>
 
@@ -385,29 +398,35 @@ export function TaskDetailContent({ task, onChange }: Props) {
           </Section>
         </View>
 
-        <Section title="Attachments" icon="paperclip">
-          {attachments.map((a) => (
-            <View key={a.id} style={styles.attachRow}>
-              <View style={styles.attachIcon}>
-                <Feather name="file-text" size={18} color="#0a0a0a" />
+        <View
+          onLayout={(e) => {
+            attachmentsSectionYRef.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Section title="Attachments" icon="paperclip">
+            {attachments.map((a) => (
+              <View key={a.id} style={styles.attachRow}>
+                <View style={styles.attachIcon}>
+                  <Feather name="file-text" size={18} color="#0a0a0a" />
+                </View>
+                <View style={styles.attachMeta}>
+                  <Text style={styles.attachName}>{a.name}</Text>
+                  {a.subtitle ? <Text style={styles.attachSub}>{a.subtitle}</Text> : null}
+                </View>
+                <Pressable
+                  onPress={() => {
+                    hapticLight();
+                    onChange({ ...task, attachments: attachments.filter((x) => x.id !== a.id) });
+                  }}
+                  hitSlop={8}
+                >
+                  <Feather name="trash-2" size={18} color="#b91c1c" />
+                </Pressable>
               </View>
-              <View style={styles.attachMeta}>
-                <Text style={styles.attachName}>{a.name}</Text>
-                {a.subtitle ? <Text style={styles.attachSub}>{a.subtitle}</Text> : null}
-              </View>
-              <Pressable
-                onPress={() => {
-                  hapticLight();
-                  onChange({ ...task, attachments: attachments.filter((x) => x.id !== a.id) });
-                }}
-                hitSlop={8}
-              >
-                <Feather name="trash-2" size={18} color="#b91c1c" />
-              </Pressable>
-            </View>
-          ))}
-          <GhostButton icon="plus" label="Add attachment" onPress={addAttachment} />
-        </Section>
+            ))}
+            <GhostButton icon="plus" label="Add attachment" onPress={addAttachment} />
+          </Section>
+        </View>
 
         <Section title="Activity" icon="activity">
           {activity.length === 0 ? (
