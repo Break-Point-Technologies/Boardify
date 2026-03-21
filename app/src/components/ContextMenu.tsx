@@ -1,10 +1,3 @@
-/**
- * Swift `Menu` / glass triggers: compositing after dismiss can leave a square halo behind
- * rounded glass. Mitigations: clip the trigger (`overflow: 'hidden'` + `borderRadius`),
- * keep `elevation: 0`, moderate `zIndex`. iOS 26 Liquid Glass also shows a transient
- * shadow glitch (platform): https://stackoverflow.com/q/79868812
- * Expo: https://github.com/expo/expo/issues/42501
- */
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -307,7 +300,6 @@ const styles = StyleSheet.create({
   triggerWrapper: {
     width: '100%',
     borderRadius: 22.5,
-    // Android / Modal path: clip avoids square halo behind rounded triggers.
     overflow: 'hidden',
     zIndex: 40,
     elevation: 0,

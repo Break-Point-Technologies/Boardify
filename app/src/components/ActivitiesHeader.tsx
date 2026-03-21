@@ -30,7 +30,6 @@ interface User {
 
 type TabsScreenName = 'index' | 'messages' | 'account';
 
-/** Which tab is selected under `(tabs)`, even when a root-stack modal (e.g. /create-board) owns `usePathname()`. */
 function useSelectedTabsScreen(): TabsScreenName {
   const fromNav = useNavigationState((state) => {
     const routes = state?.routes as { name: string; state?: { routes: { name: string }[]; index: number } }[] | undefined;

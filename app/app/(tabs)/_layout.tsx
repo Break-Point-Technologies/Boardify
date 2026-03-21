@@ -83,7 +83,6 @@ export default function TabsLayout() {
           ))}
         </NativeTabs>
       </View>
-      {/* Sibling of NativeTabs: SwiftUI Menu `Host` stays above tab UIScrollView layers. */}
       <AppTopNav user={user} loading={loading} />
     </View>
   );
