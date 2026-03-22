@@ -433,6 +433,7 @@ export default function BoardScreen({
                 icon="filter"
                 size={23}
                 accessibilityLabel="Board view"
+                embedInSwiftMenu
                 onPress={() => {}}
               />
             }
@@ -566,7 +567,10 @@ const styles = StyleSheet.create({
   },
   headerFilterMenuTrigger: {
     width: 45,
+    minHeight: 45,
     alignSelf: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerSideSpacer: {
     width: 45,

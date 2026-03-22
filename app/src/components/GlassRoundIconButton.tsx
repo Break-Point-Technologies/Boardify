@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 
@@ -12,6 +12,7 @@ export type GlassRoundIconButtonProps = {
   accessibilityLabel: string;
   hitSlop?: number;
   disabled?: boolean;
+  embedInSwiftMenu?: boolean;
 };
 
 export function GlassRoundIconButton({
@@ -21,9 +22,24 @@ export function GlassRoundIconButton({
   accessibilityLabel,
   hitSlop = 12,
   disabled,
+  embedInSwiftMenu,
 }: GlassRoundIconButtonProps) {
-  const isGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
-  const glyph = <Feather name={icon} size={size} color={ICON_COLOR} />;
+  const isGlass =
+    isLiquidGlassAvailable() &&
+    isGlassEffectAPIAvailable() &&
+    !(embedInSwiftMenu && Platform.OS === 'ios');
+  const glyph = (
+    <Feather
+      name={icon}
+      size={size}
+      color={ICON_COLOR}
+      style={
+        embedInSwiftMenu && Platform.OS === 'ios'
+          ? { lineHeight: size, textAlign: 'center' as const }
+          : undefined
+      }
+    />
+  );
 
   const face = isGlass ? (
     <GlassView
@@ -35,7 +51,12 @@ export function GlassRoundIconButton({
       {glyph}
     </GlassView>
   ) : (
-    <View style={[styles.circle, styles.fallback]}>
+    <View
+      style={[
+        styles.circle,
+        embedInSwiftMenu && Platform.OS === 'ios' ? styles.swiftMenuLabel : styles.fallback,
+      ]}
+    >
       {glyph}
     </View>
   );
@@ -72,5 +93,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#000',
     backgroundColor: 'rgba(255,255,255,0.85)',
+  },
+  swiftMenuLabel: {
+    backgroundColor: 'transparent',
   },
 });

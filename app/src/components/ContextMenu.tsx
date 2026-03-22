@@ -21,15 +21,18 @@ let SwiftMenu: any;
 let Button: any;
 let Section: any;
 let Host: any;
+let swiftMenuGlassModifiers: any[] | undefined;
 
 if (Platform.OS === 'ios') {
   try {
     const swiftUI = require('@expo/ui/swift-ui');
+    const { buttonStyle } = require('@expo/ui/swift-ui/modifiers');
     SwiftContextMenu = swiftUI.ContextMenu;
     SwiftMenu = swiftUI.Menu;
     Button = swiftUI.Button;
     Section = swiftUI.Section;
     Host = swiftUI.Host;
+    swiftMenuGlassModifiers = [buttonStyle('glass')];
   } catch (error) {
     console.warn('SwiftUI components not available');
   }
@@ -173,7 +176,9 @@ export function ContextMenu({
       return (
         <View style={styles.iosSwiftMenuLift} collapsable={false}>
           <Host colorScheme="light" style={hostSlotStyle}>
-            <SwiftMenu label={
+            <SwiftMenu
+              modifiers={swiftMenuGlassModifiers}
+              label={
               <View
                 ref={triggerRef}
                 style={triggerWrapStyle}
@@ -194,7 +199,7 @@ export function ContextMenu({
       return (
         <View style={styles.iosSwiftMenuLift} collapsable={false}>
           <Host colorScheme="light" style={hostSlotStyle}>
-            <SwiftContextMenu>
+            <SwiftContextMenu modifiers={swiftMenuGlassModifiers}>
               <SwiftContextMenu.Trigger>
                 <View
                   ref={triggerRef}
