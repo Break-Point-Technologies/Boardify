@@ -291,10 +291,11 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     elevation: 0,
   },
+  /** Fills the parent; icon menus sit in 45px-wide headers, full-width rows use the card width. */
   iosHostSlot: {
-    width: 45,
-    height: 45,
-    alignSelf: 'flex-start',
+    width: '100%',
+    minWidth: 0,
+    alignSelf: 'stretch',
     overflow: 'visible',
   },
   triggerWrapper: {
