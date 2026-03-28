@@ -334,8 +334,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     pointerEvents: 'box-none',
-    zIndex: 1000,
-    elevation: 24,
+    /** Above scaled board / transforms so expand/minimize stays tappable in focused list mode. */
+    zIndex: 20000,
+    elevation: 20000,
     overflow: 'visible',
   },
   inner: {
