@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View, Platform } from 'react-native';
+import { Pressable, StyleSheet, View, Platform, TouchableWithoutFeedback } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -30,9 +30,9 @@ type GlassTripleStripProps = {
 };
 
 /** Tight pill: 3× touch target + gaps; native `GlassView` needs explicit width. */
-const TRIPLE_ICON_GAP = 10;
+const TRIPLE_ICON_GAP = 6;
 const TRIPLE_SLOT = 44;
-const TRIPLE_PILL_PADDING_H = 6;
+const TRIPLE_PILL_PADDING_H = 4;
 const TRIPLE_PILL_PADDING_V = 4;
 const TRIPLE_INNER_WIDTH = TRIPLE_SLOT * 3 + TRIPLE_ICON_GAP * 2;
 const TRIPLE_PILL_WIDTH = TRIPLE_INNER_WIDTH + TRIPLE_PILL_PADDING_H * 2;
@@ -97,27 +97,30 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Glass
 }
 
 /**
- * Expand control as direct `GlassView` sibling (required for `GlassContainer` liquid merge on iOS).
+ * Direct `GlassView` sibling for `GlassContainer` merge on iOS.
+ *
+ * `isInteractive={false}` avoids the extra native liquid-glass touch lens (misaligned “white blob”).
+ * Do not use `Pressable` here: pressed-state opacity/styles composite badly with `GlassView` and show
+ * a circular press artifact. `TouchableWithoutFeedback` triggers the action with zero visual overlay.
  */
 function BoardExpandGlassNative({ onPress }: { onPress: () => void }) {
   return (
     <GlassView
-      isInteractive
+      isInteractive={false}
       colorScheme="light"
       tintColor="rgba(255, 255, 255, 0.42)"
       style={styles.expandGlass}
     >
-      <Pressable
+      <TouchableWithoutFeedback
         onPress={onPress}
-        hitSlop={12}
-        accessibilityLabel="Expand"
         accessibilityRole="button"
-        style={({ pressed }) => [styles.expandGlassInner, pressed && styles.expandGlassInnerPressed]}
+        accessibilityLabel="Expand"
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <View style={styles.expandIconOptical} collapsable={false}>
+        <View style={styles.expandGlassInner} collapsable={false}>
           <Feather name="maximize-2" size={ICON_SIZE} color={ICON_COLOR} />
         </View>
-      </Pressable>
+      </TouchableWithoutFeedback>
     </GlassView>
   );
 }
@@ -199,7 +202,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   tripleGlass: {
     width: TRIPLE_PILL_WIDTH,
@@ -259,14 +262,6 @@ const styles = StyleSheet.create({
     height: 45,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  /** `maximize-2` glyph sits slightly high-right in the Feather bbox. */
-  expandIconOptical: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateX: -1 }, { translateY: 0.5 }],
-  },
-  expandGlassInnerPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    backgroundColor: 'transparent',
   },
 });

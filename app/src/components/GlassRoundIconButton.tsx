@@ -14,6 +14,8 @@ export type GlassRoundIconButtonProps = {
   disabled?: boolean;
   /** iOS SwiftUI Menu: omit GlassView in label; glass comes from Menu `buttonStyle('glass')`. */
   embedInSwiftMenu?: boolean;
+  /** Nudge off-center vector art (e.g. Feather `maximize-2`) inside the glass circle. */
+  iconOpticalNudge?: { x?: number; y?: number };
 };
 
 export function GlassRoundIconButton({
@@ -24,15 +26,34 @@ export function GlassRoundIconButton({
   hitSlop = 12,
   disabled,
   embedInSwiftMenu,
+  iconOpticalNudge,
 }: GlassRoundIconButtonProps) {
   const isGlass =
     isLiquidGlassAvailable() &&
     isGlassEffectAPIAvailable() &&
     !(embedInSwiftMenu && Platform.OS === 'ios');
   const feather = <Feather name={icon} size={size} color={ICON_COLOR} />;
+  const hasNudge =
+    iconOpticalNudge != null &&
+    (iconOpticalNudge.x != null || iconOpticalNudge.y != null);
   const glyph =
     embedInSwiftMenu && Platform.OS === 'ios' ? (
       <View style={styles.menuLabelGlyphNudge} collapsable={false}>
+        {feather}
+      </View>
+    ) : hasNudge ? (
+      <View
+        style={[
+          styles.iconOpticalWrap,
+          {
+            transform: [
+              { translateX: iconOpticalNudge?.x ?? 0 },
+              { translateY: iconOpticalNudge?.y ?? 0 },
+            ],
+          },
+        ]}
+        collapsable={false}
+      >
         {feather}
       </View>
     ) : (
@@ -97,5 +118,11 @@ const styles = StyleSheet.create({
   },
   menuLabelGlyphNudge: {
     transform: [{ translateX: -11 }, { translateY: -6 }],
+  },
+  iconOpticalWrap: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
