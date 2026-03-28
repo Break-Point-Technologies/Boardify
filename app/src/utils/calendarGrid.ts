@@ -1,10 +1,8 @@
-/** Local calendar date key for bucketing due dates (no timezone conversion beyond JS Date local fields). */
 export function dateToLocalKey(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** ISO due string → local YYYY-MM-DD. Invalid dates yield empty string. */
 export function dueDateLocalKey(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -15,12 +13,10 @@ export function isSameLocalDay(a: Date, b: Date): boolean {
   return dateToLocalKey(a) === dateToLocalKey(b);
 }
 
-/** First moment of local calendar day (month 0–11). */
 export function localDay(year: number, monthIndex: number, day: number): Date {
   return new Date(year, monthIndex, day);
 }
 
-/** Sunday-first week: 6 rows × 7 columns, `null` = outside current month. */
 export function getCalendarMonthGrid(visibleMonth: Date): (Date | null)[][] {
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth();

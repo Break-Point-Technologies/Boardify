@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-/** Dashed gap for table row DnD; width matches table row band. */
 export function TableRowPlaceholder({ tableWidth }: { tableWidth: number }) {
   return (
     <View style={[styles.row, { width: tableWidth }]}>

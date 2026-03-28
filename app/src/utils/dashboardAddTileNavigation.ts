@@ -56,7 +56,6 @@ export type ParsedDashboardTileRef = {
   lineTimeframe?: DashboardLineTimeframe;
 };
 
-/** URL param payload: existing tiles (ids omitted). */
 export function parseDashboardTilesParam(
   raw: string | string[] | undefined
 ): ParsedDashboardTileRef[] {

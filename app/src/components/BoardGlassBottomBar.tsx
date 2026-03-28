@@ -22,11 +22,8 @@ export type BoardGlassBottomBarProps = {
   onBellPress?: () => void;
   onSettingsPress?: () => void;
   onExpandPress?: () => void;
-  /** When false, hides the fullscreen control (Table / Calendar / Dashboard). Default true. */
   showExpandButton?: boolean;
-  /** When true, expand shows minimize icon — focused list mode is active. */
   expandActive?: boolean;
-  /** Bottom “Board / List / Calendar” layout menu (left of the triple pill). */
   onLayoutMenuSelect?: (mode: BoardBottomBarLayoutMode) => void;
 };
 
@@ -36,7 +33,6 @@ type GlassTripleStripProps = {
   onSettingsPress: () => void;
 };
 
-/** Tight pill: 3× touch target + gaps; native `GlassView` needs explicit width. */
 const TRIPLE_ICON_GAP = 6;
 const TRIPLE_SLOT = 44;
 const TRIPLE_PILL_PADDING_H = 4;
@@ -44,31 +40,17 @@ const TRIPLE_PILL_PADDING_V = 4;
 const TRIPLE_INNER_WIDTH = TRIPLE_SLOT * 3 + TRIPLE_ICON_GAP * 2;
 const TRIPLE_PILL_WIDTH = TRIPLE_INNER_WIDTH + TRIPLE_PILL_PADDING_H * 2;
 const TRIPLE_ROW_HEIGHT = 44;
-
-/** Gap between pill and expand. */
 const ROW_GAP = 16;
-/** Pull fullscreen control slightly toward the pill (optical / layout tweak). */
 const EXPAND_SHIFT_LEFT = 3;
 const EXPAND_ORB_SIZE = 45;
 const PILL_TRACK_HEIGHT = TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2;
-/**
- * Space inside the native glass row height so `isInteractive` morphs are not clipped by
- * `GlassContainer` / `UIVisualEffectView` bounds. Row content is bottom-aligned in this height.
- */
 const EXPAND_INTERACTION_OVERFLOW = 40;
 const GLASS_ROW_MIN_HEIGHT = PILL_TRACK_HEIGHT + EXPAND_INTERACTION_OVERFLOW;
 export const BOARD_GLASS_BOTTOM_BAR_CLEARANCE = 96 + EXPAND_INTERACTION_OVERFLOW;
-/** Left layout-menu orb (matches expand orb for symmetry). */
 const LAYOUT_MENU_ORB_SIZE = 45;
-/** Pill + gap + expand only (fallback row when native glass merge is off). */
 const GLASS_PAIR_WIDTH = TRIPLE_PILL_WIDTH + ROW_GAP + EXPAND_ORB_SIZE;
-/**
- * Full bar width (shell + fallback). Merged glass uses inner margins so visual gaps match `ROW_GAP - EXPAND_SHIFT_LEFT`.
- * (Layout menu orb omitted for now — add `LAYOUT_MENU_ORB_SIZE + ROW_GAP` when restoring left control.)
- */
 const ROW_TOTAL_WIDTH_WITH_EXPAND = GLASS_PAIR_WIDTH - EXPAND_SHIFT_LEFT;
 const ROW_TOTAL_WIDTH_PILL_ONLY = TRIPLE_PILL_WIDTH;
-/** From **pill** left edge to bell column center (for window centering). */
 const BELL_CENTER_X_FROM_PILL_LEFT =
   TRIPLE_PILL_PADDING_H + TRIPLE_SLOT + TRIPLE_ICON_GAP + TRIPLE_SLOT / 2;
 
@@ -130,72 +112,6 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Glass
   return <View style={[styles.tripleGlass, styles.tripleFallback]}>{row}</View>;
 }
 
-/*
- * Left “Board / List / Calendar” layout orb — temporarily removed from the bar.
- * Uncomment this block and the `BoardBottomLayoutMenu` usages below; restore `ContextMenu` import;
- * set `ROW_TOTAL_WIDTH` back to `LAYOUT_MENU_ORB_SIZE + ROW_GAP + GLASS_PAIR_WIDTH - EXPAND_SHIFT_LEFT`;
- * restore `rowLeft` to subtract `LAYOUT_MENU_ORB_SIZE + ROW_GAP` before `EXPAND_SHIFT_LEFT`.
- *
-function BoardBottomLayoutMenu({
-  onSelect,
-  inGlassMerge,
-}: {
-  onSelect?: (mode: BoardBottomBarLayoutMode) => void;
-  inGlassMerge?: boolean;
-}) {
-  const noop = () => {};
-  const options = useMemo(
-    () =>
-      (
-        [
-          { label: 'Board', value: 'board' as const },
-          { label: 'List', value: 'list' as const },
-          { label: 'Calendar', value: 'calendar' as const },
-        ] as const
-      ).map(({ label, value }) => ({
-        label,
-        value,
-        onPress: () => {
-          (onSelect ?? noop)(value);
-        },
-      })),
-    [onSelect],
-  );
-
-  const menu = (
-    <ContextMenu
-      options={options}
-      hostMatchContents
-      iosGlassMenuTrigger
-      triggerWrapperStyle={styles.leftMenuTriggerWrap}
-      trigger={
-        <GlassRoundIconButton
-          icon="layout"
-          size={ICON_SIZE}
-          accessibilityLabel="Layout and views"
-          embedInSwiftMenu={Platform.OS === 'ios'}
-          onPress={() => {}}
-        />
-      }
-    />
-  );
-
-  if (inGlassMerge) {
-    return (
-      <View style={styles.layoutMenuInGlassSlot} collapsable={false}>
-        {menu}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.leftMenuOrbSlot} collapsable={false}>
-      {menu}
-    </View>
-  );
-}
-*/
-
 function BoardExpandGlassPressable({
   onPress,
   active,
@@ -243,7 +159,6 @@ export function BoardGlassBottomBar({
 
   const rowTotalWidth = showExpandButton ? ROW_TOTAL_WIDTH_WITH_EXPAND : ROW_TOTAL_WIDTH_PILL_ONLY;
 
-  /** Align bell with window horizontal center (reference: centered “middle mark” toolbars). */
   const rowLeft = useMemo(
     () =>
       showExpandButton
@@ -293,7 +208,6 @@ export function BoardGlassBottomBar({
                 pointerEvents="box-none"
                 style={[styles.glassMergedRow, { width: rowTotalWidth }]}
               >
-                {/* <BoardBottomLayoutMenu onSelect={onLayoutMenuSelect} inGlassMerge /> */}
                 {strip}
                 {showExpandButton ? (
                   <BoardExpandGlassPressable onPress={onExpand} active={expandActive} />
@@ -301,7 +215,6 @@ export function BoardGlassBottomBar({
               </GlassContainer>
             ) : (
               <View style={styles.bottomBarRow} pointerEvents="box-none">
-                {/* <BoardBottomLayoutMenu onSelect={onLayoutMenuSelect} /> */}
                 <View
                   style={[
                     styles.fallbackGlassPair,
@@ -334,7 +247,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     pointerEvents: 'box-none',
-    /** Above scaled board / transforms so expand/minimize stays tappable in focused list mode. */
     zIndex: 20000,
     elevation: 20000,
     overflow: 'visible',
@@ -343,10 +255,6 @@ const styles = StyleSheet.create({
     width: '100%',
     overflow: 'visible',
   },
-  /**
-   * Taller than the pill row: row is pinned to the bottom so interactive glass can move up
-   * without hitting a hard clip at `top: 0`.
-   */
   barTrack: {
     width: '100%',
     minHeight: GLASS_ROW_MIN_HEIGHT,
@@ -366,8 +274,6 @@ const styles = StyleSheet.create({
     minHeight: GLASS_ROW_MIN_HEIGHT,
     overflow: 'visible',
   },
-  /** Bounds Android `ContextMenu` root `width: '100%'` so the bottom row doesn’t stretch. */
-  /** Match expand orb spacing: `expandPressable` uses `marginLeft: -EXPAND_SHIFT_LEFT` toward the pill. */
   leftMenuOrbSlot: {
     width: LAYOUT_MENU_ORB_SIZE,
     height: LAYOUT_MENU_ORB_SIZE,
@@ -380,17 +286,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** Holds layout `ContextMenu` inside `GlassContainer` (Android width bound). */
   layoutMenuInGlassSlot: {
     width: LAYOUT_MENU_ORB_SIZE,
     height: LAYOUT_MENU_ORB_SIZE,
     marginRight: -EXPAND_SHIFT_LEFT,
     overflow: 'visible',
   },
-  /**
-   * Taller than the pill so native glass has room for morphs; `center` aligns 45px orb with 52px pill.
-   * (`flex-end` matched bottoms and made the orb look visually low.)
-   */
   glassMergedRow: {
     minHeight: GLASS_ROW_MIN_HEIGHT,
     flexDirection: 'row',
@@ -425,10 +326,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     overflow: 'hidden',
   },
-  /**
-   * `GlassView` on iOS often does not run normal RN flex for children; pin the row with insets
-   * so icons span the full pill (same pattern as a bounded overlay).
-   */
   tripleInner: {
     position: 'absolute',
     left: TRIPLE_PILL_PADDING_H,

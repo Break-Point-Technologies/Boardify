@@ -11,7 +11,6 @@ function startOfLocalDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-/** Days from local today: negative = overdue, 0–7 = due soon, >7 = due later. */
 function dueDayOffsetFromToday(dueIso: string, now: Date): number {
   const dueStart = startOfLocalDay(new Date(dueIso));
   const todayStart = startOfLocalDay(now);
@@ -233,10 +232,6 @@ const LINE_PALETTE = [
   '#6b8e9e',
 ];
 
-/**
- * For each local day in the timeframe, counts cards whose `createdAtIso` falls on that day
- * (cards without `createdAtIso` are treated as created today).
- */
 export function aggregateDashboardLineChart(
   columns: BoardColumnData[],
   dimension: DashboardDimension,

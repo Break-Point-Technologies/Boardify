@@ -59,25 +59,34 @@ import { toggleStopwatchOnTask } from '../utils/workTime';
 
 const SHIFT = 5;
 
-/** Must match `BoardColumn` strip width / scroll stride (width + marginRight). */
 const BOARD_STRIP_COLUMN_WIDTH = 280;
 
-/** Focused board carousel: card width as fraction of screen; gap between snap stops (Trello-style peek). */
 const FOCUS_LIST_CARD_WIDTH_RATIO = 0.86;
 const FOCUS_LIST_CAROUSEL_GAP = 12;
 
 const BOARD_STRIP_COL_STRIDE = BOARD_STRIP_COLUMN_WIDTH + 16;
 
-const FOCUS_ZOOM_MS = 460;
-const FOCUS_ZOOM_EASING = Easing.out(Easing.cubic);
+const FOCUS_ZOOM_MS = 420;
+const FOCUS_ZOOM_EASING = Easing.inOut(Easing.cubic);
+const FOCUS_ZOOM_OUT_EASING = Easing.out(Easing.cubic);
+const FOCUS_ZOOM_EPS = 0.008;
 
 function focusZoomStartScale(cardWidth: number): number {
   return Math.max(0.72, Math.min(1, BOARD_STRIP_COLUMN_WIDTH / cardWidth));
 }
 
-/** Horizontal center of column `idx` (0-based) in viewport coords; scrollX = content offset. */
 function stripColumnCenterScreenX(scrollX: number, pad: number, idx: number): number {
   return pad + idx * BOARD_STRIP_COL_STRIDE + BOARD_STRIP_COLUMN_WIDTH / 2 - scrollX;
+}
+
+function focusColumnCenterScreenX(
+  scrollX: number,
+  sidePad: number,
+  snapInterval: number,
+  cardWidth: number,
+  idx: number
+): number {
+  return sidePad + idx * snapInterval + cardWidth / 2 - scrollX;
 }
 
 function daysAgoIso(daysAgo: number): string {
@@ -218,9 +227,10 @@ export default function BoardScreen({
 }: BoardScreenProps) {
   const insets = useSafeAreaInsets();
   const { width: screenW, height: screenH } = useWindowDimensions();
+  const screenWRef = useRef(screenW);
+  screenWRef.current = screenW;
   const [columns, setColumns] = useState<BoardColumnData[]>(INITIAL_COLUMNS);
   const [viewMode, setViewMode] = useState<BoardViewMode>('board');
-  /** One list per screen with paged horizontal scrolling (board view only). */
   const [boardFocusMode, setBoardFocusMode] = useState(false);
   const [focusPageIndex, setFocusPageIndex] = useState(0);
   const prevBoardFocusRef = useRef(false);
@@ -250,6 +260,8 @@ export default function BoardScreen({
   const focusZoom = useSharedValue(1);
   const focusZoomAnchorX = useSharedValue(0);
   const focusZoomAnchorY = useSharedValue(0);
+  const focusExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusExitAnimatingRef = useRef(false);
 
   useEffect(() => {
     boardFocusModeRef.current = boardFocusMode;
@@ -261,11 +273,25 @@ export default function BoardScreen({
 
   useEffect(() => {
     if (viewMode !== 'board') {
+      if (focusExitTimerRef.current != null) {
+        clearTimeout(focusExitTimerRef.current);
+        focusExitTimerRef.current = null;
+      }
+      focusExitAnimatingRef.current = false;
       cancelAnimation(focusZoom);
       focusZoom.value = 1;
       setBoardFocusMode(false);
     }
   }, [viewMode, focusZoom]);
+
+  useEffect(() => {
+    return () => {
+      if (focusExitTimerRef.current != null) {
+        clearTimeout(focusExitTimerRef.current);
+        focusExitTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const columnScrollRefs = useRef<(GHScrollViewRef | null)[]>([]);
   const measureFnsRef = useRef<Record<number, () => void>>({});
@@ -316,7 +342,6 @@ export default function BoardScreen({
     }
   }, [boardFocusMode, listDragging]);
 
-  /** Sync horizontal scroll offset when entering / exiting focused list mode. */
   useEffect(() => {
     if (viewMode !== 'board') {
       prevBoardFocusRef.current = boardFocusMode;
@@ -334,7 +359,7 @@ export default function BoardScreen({
             Math.max(0, Math.round(horizontalScrollXRef.current / colStride))
           );
           const x = idx * snap;
-          horizontalScrollRef.current?.scrollTo({ x, animated: true });
+          horizontalScrollRef.current?.scrollTo({ x, animated: false });
           horizontalScrollXRef.current = x;
           setFocusPageIndex(idx);
         } else {
@@ -345,7 +370,7 @@ export default function BoardScreen({
             Math.max(0, Math.round(horizontalScrollXRef.current / snap))
           );
           const x = page * BOARD_STRIP_COL_STRIDE;
-          horizontalScrollRef.current?.scrollTo({ x, animated: true });
+          horizontalScrollRef.current?.scrollTo({ x, animated: false });
           horizontalScrollXRef.current = x;
         }
       });
@@ -880,7 +905,6 @@ export default function BoardScreen({
 
   const columnDragEnabled = expanded == null && dragging == null && !boardFocusMode;
 
-  /** Trello-style focused board: ~86% width cards with peeks + gap snap (not full-screen pages). */
   const focusCarousel = useMemo(() => {
     const cardWidth = Math.round(screenW * FOCUS_LIST_CARD_WIDTH_RATIO);
     const gap = FOCUS_LIST_CAROUSEL_GAP;
@@ -895,10 +919,26 @@ export default function BoardScreen({
   const focusColumnMaxH = Math.min(580, Math.round(screenH * 0.58));
   const focusCardScrollMax = Math.max(300, focusColumnMaxH - 130);
 
+  const finalizeFocusExit = useCallback(() => {
+    if (focusExitTimerRef.current != null) {
+      clearTimeout(focusExitTimerRef.current);
+      focusExitTimerRef.current = null;
+    }
+    focusExitAnimatingRef.current = false;
+    cancelAnimation(focusZoom);
+    focusZoom.value = 1;
+    setBoardFocusMode(false);
+  }, [focusZoom]);
+
   const handleBoardFocusExpandPress = useCallback(() => {
     if (viewMode !== 'board') return;
 
     if (!boardFocusMode) {
+      if (focusExitTimerRef.current != null) {
+        clearTimeout(focusExitTimerRef.current);
+        focusExitTimerRef.current = null;
+      }
+      focusExitAnimatingRef.current = false;
       const pad = isWeb ? 24 : 16;
       const sx = horizontalScrollXRef.current;
       const maxIdx = Math.max(0, columns.length - 1);
@@ -911,23 +951,53 @@ export default function BoardScreen({
       return;
     }
 
-    /**
-     * Exit immediately on the JS thread. Animated zoom-out + `withTiming` callbacks were flaky
-     * (cancellations / glass hit-testing), leaving focus mode stuck. Enter still uses zoom-in.
-     */
+    if (focusExitAnimatingRef.current) {
+      finalizeFocusExit();
+      return;
+    }
+
+    const sx = horizontalScrollXRef.current;
+    const snap = focusCarousel.snapInterval;
+    const idx = Math.min(columns.length, Math.max(0, Math.round(sx / snap)));
+    focusZoomAnchorX.value = focusColumnCenterScreenX(
+      sx,
+      focusCarousel.sidePad,
+      snap,
+      focusCarousel.cardWidth,
+      idx
+    );
+    focusZoomAnchorY.value = screenH * 0.42;
+    const zOut = focusZoomStartScale(focusCarousel.cardWidth);
     cancelAnimation(focusZoom);
-    focusZoom.value = 1;
-    setBoardFocusMode(false);
+
+    if (zOut >= 1 - FOCUS_ZOOM_EPS) {
+      finalizeFocusExit();
+      return;
+    }
+
+    focusExitAnimatingRef.current = true;
+    focusZoom.value = withTiming(zOut, {
+      duration: FOCUS_ZOOM_MS,
+      easing: FOCUS_ZOOM_OUT_EASING,
+    });
+    focusExitTimerRef.current = setTimeout(() => {
+      focusExitTimerRef.current = null;
+      focusExitAnimatingRef.current = false;
+      setBoardFocusMode(false);
+    }, FOCUS_ZOOM_MS + 64);
   }, [
     viewMode,
     boardFocusMode,
     isWeb,
     columns.length,
+    focusCarousel.snapInterval,
+    focusCarousel.sidePad,
     focusCarousel.cardWidth,
     screenH,
     focusZoom,
     focusZoomAnchorX,
     focusZoomAnchorY,
+    finalizeFocusExit,
   ]);
 
   useEffect(() => {
@@ -940,6 +1010,10 @@ export default function BoardScreen({
         if (raf != null) cancelAnimationFrame(raf);
       };
     }
+    const cardWidth = Math.round(screenWRef.current * FOCUS_LIST_CARD_WIDTH_RATIO);
+    const start = focusZoomStartScale(cardWidth);
+    cancelAnimation(focusZoom);
+    focusZoom.value = start;
     raf = requestAnimationFrame(() => {
       raf = null;
       focusZoom.value = withTiming(1, {
@@ -951,7 +1025,7 @@ export default function BoardScreen({
       cancelAnimation(focusZoom);
       if (raf != null) cancelAnimationFrame(raf);
     };
-  }, [boardFocusMode, focusCarousel.cardWidth, focusZoom]);
+  }, [boardFocusMode]);
 
   const boardViewMenuOptions = useMemo(
     () =>
@@ -1063,7 +1137,6 @@ export default function BoardScreen({
           {listDragging
             ? (() => {
                 const nodes: React.ReactNode[] = [];
-                /** Global “insert before column i” (0..n); must match `computeColumnHoverInsertIndex` / `reorderColumns`. */
                 const insertAt = listHoverInsert ?? 0;
                 const n = columns.length;
                 for (let i = 0; i <= n; i++) {

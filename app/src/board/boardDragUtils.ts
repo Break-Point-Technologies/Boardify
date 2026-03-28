@@ -32,15 +32,12 @@ export function computeHoverInsertIndex(
   return Math.max(0, Math.min(virtualCardCount, idx));
 }
 
-/** Table row slot height for DnD hover (matches ~padding + single-line row in BoardTableView). */
 export const TABLE_ROW_SLOT_HEIGHT = 68;
 
-/** Insert-before index in 0..columns.length using column band midpoints (window coords). */
 export function computeColumnHoverInsertIndex(
   absX: number,
   layouts: Array<{ x: number; width: number } | null | undefined>,
   columnCount: number,
-  /** Column being dragged is collapsed — omit it from hit bands. */
   skipColumnIndex: number | null = null
 ): number {
   for (let i = 0; i < columnCount; i++) {

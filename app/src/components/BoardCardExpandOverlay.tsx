@@ -26,7 +26,6 @@ import { TaskDetailContent } from './task/TaskDetailContent';
 
 const CARD_SHIFT = 4;
 
-/** Same progress window as body text so chrome and copy feel like one motion. */
 const TEXT_FADE_IN: [number, number] = [0.1, 0.58];
 
 const openConfig = {
@@ -46,7 +45,6 @@ export type ExpandedCardLayout = {
   columnIndex: number;
   cardIndex: number;
   columnTitle: string;
-  /** Stable lookup when columns/cards reorder. */
   cardId: string;
 };
 
@@ -189,7 +187,6 @@ export function BoardCardExpandOverlay({
     ),
   }));
 
-  /** Header + body copy: driven by shell `progress` so text tracks the expand (no post-delay). */
   const headerRevealStyle = useAnimatedStyle(() => {
     const t = progress.value;
     const [a, b] = TEXT_FADE_IN;

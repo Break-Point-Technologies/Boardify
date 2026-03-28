@@ -22,7 +22,6 @@ export interface BoardColumnProps {
     cardIndex: number,
     layout: { x: number; y: number; width: number; height: number }
   ) => void;
-  /** When set, card with this id is hidden (shown in expand overlay). */
   expandedCardId?: string | null;
   columnIndex: number;
   draggingCardId: string | null;
@@ -44,7 +43,6 @@ export interface BoardColumnProps {
   registerColumnMeasure?: (colIndex: number, fn: () => void) => void;
   unregisterColumnMeasure?: (colIndex: number) => void;
   listScrollEnabled?: boolean;
-  /** True while a list (column) drag is active — disables card drag. */
   listDraggingActive?: boolean;
   isDraggingThisColumn?: boolean;
   columnDragEnabled?: boolean;
@@ -58,11 +56,8 @@ export interface BoardColumnProps {
   onColumnListDragMove: (absoluteX: number, absoluteY: number) => void;
   onColumnListDragEnd: () => void;
   onColumnWrapLayout: (colIndex: number, rect: { x: number; y: number; width: number; height: number }) => void;
-  /** Overrides default 280px wrap width (focused board paging). */
   columnWidth?: number;
-  /** Overrides column `maxHeight` (focused mode uses more vertical space). */
   columnMaxHeight?: number;
-  /** Overrides vertical card list `maxHeight`. */
   cardScrollMaxHeight?: number;
 }
 

@@ -343,7 +343,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** Offsets MenuLabel + glass; tune against Expo RN bridge vs liquid glass (often right/down bias). */
   menuLabelGlyphNudge: {
     transform: [{ translateX: -11 }, { translateY: -6 }],
   },

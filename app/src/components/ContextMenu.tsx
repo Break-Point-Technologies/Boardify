@@ -22,7 +22,6 @@ let Button: any;
 let Section: any;
 let Host: any;
 let menuGlassModifiers: any[] | undefined;
-/** Removes default SwiftUI `Menu` label chrome when the trigger is custom (e.g. expo `GlassView`). */
 let menuPlainLabelModifiers: any[] | undefined;
 
 if (Platform.OS === 'ios') {
@@ -341,7 +340,6 @@ const styles = StyleSheet.create({
     zIndex: 40,
     elevation: 0,
   },
-  /** Custom triggers (e.g. expo `GlassView`): no rounded clip — avoids a second “pill” behind SwiftUI `Menu`. */
   triggerWrapperCustomLabel: {
     width: '100%',
     backgroundColor: 'transparent',

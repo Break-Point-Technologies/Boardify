@@ -42,7 +42,6 @@ type DueTaskRef = {
 type Props = {
   columns: BoardColumnData[];
   bottomClearance: number;
-  /** `layout` is window coordinates from the tapped row so the expand overlay animates from it. */
   onOpenTask: (cardId: string, layout?: CalendarTaskOpenLayout) => void;
 };
 
@@ -456,7 +455,6 @@ const styles = StyleSheet.create({
   dayCellToday: {
     backgroundColor: '#f7f4ee',
   },
-  /** Inset ring avoids row/column hairlines eating the outer border (esp. top). */
   dayCellSelectedWrap: {
     backgroundColor: '#fffef5',
     zIndex: 2,

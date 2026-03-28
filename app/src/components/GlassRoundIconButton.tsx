@@ -12,9 +12,7 @@ export type GlassRoundIconButtonProps = {
   accessibilityLabel: string;
   hitSlop?: number;
   disabled?: boolean;
-  /** iOS SwiftUI Menu: omit GlassView in label; glass comes from Menu `buttonStyle('glass')`. */
   embedInSwiftMenu?: boolean;
-  /** Nudge off-center vector art (e.g. Feather `maximize-2`) inside the glass circle. */
   iconOpticalNudge?: { x?: number; y?: number };
 };
 

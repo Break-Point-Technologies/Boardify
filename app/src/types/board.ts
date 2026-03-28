@@ -46,7 +46,6 @@ export type TaskWorkLogEntry = {
 export type BoardCardData = {
   id: string;
   title: string;
-  /** When set, used for dashboard line charts (cards created per day). */
   createdAtIso?: string;
   subtitle?: string;
   labelColor?: string;

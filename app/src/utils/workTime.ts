@@ -43,7 +43,6 @@ export function durationFromIsoRange(startIso: string, endIso: string): number |
   return b - a;
 }
 
-/** Start stopwatch if idle, or stop and append a ≥1s segment to workLog (same rules as task detail). */
 export function toggleStopwatchOnTask(task: BoardCardData): BoardCardData {
   const running = task.workTimerRunStartedAtMs != null;
   if (running) {

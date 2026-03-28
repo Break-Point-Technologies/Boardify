@@ -21,7 +21,6 @@ import {
   TABLE_ROW_SLOT_HEIGHT,
 } from '../board/boardDragUtils';
 
-/** Fixed column widths (sum = inner row width). Flex caused header/body drift on device. */
 const COL_WIDTHS = {
   check: 52,
   name: 300,
@@ -34,15 +33,9 @@ const COL_WIDTHS = {
 
 const TABLE_ROW_PADDING_H = 10;
 const TABLE_INNER_WIDTH = Object.values(COL_WIDTHS).reduce((a, b) => a + b, 0);
-/** Full table row width including horizontal padding (header + data rows share this). */
 export const TABLE_MIN_WIDTH = TABLE_INNER_WIDTH + TABLE_ROW_PADDING_H * 2;
-
-/** Offset shadow, matches [BoardColumn.tsx](BoardColumn.tsx) `COLUMN_SHIFT`. */
 const TABLE_SHIFT = 5;
-
-/** Horizontal inset so the table + shadow clear the display’s rounded corners. */
 const TABLE_EDGE_PADDING_H = Platform.select({ web: 24, default: 26 }) ?? 26;
-
 const ICON_MUTED = '#666';
 const TEXT_PRIMARY = '#0a0a0a';
 
@@ -74,7 +67,6 @@ function formatTrackedTime(card: BoardCardData): string {
   return `${sec}s`;
 }
 
-/** Preset labels always available in the table labels menu; merged with labels used on any card. */
 const TABLE_LABEL_PRESETS: TaskLabel[] = [
   { id: 'lbl-design', name: 'Design', color: '#F3D9B1' },
   { id: 'lbl-bug', name: 'Bug', color: '#fecaca' },
@@ -97,7 +89,6 @@ type Props = {
     cardIndex: number,
     layout: { x: number; y: number; width: number; height: number }
   ) => void;
-  /** Start/stop stopwatch for the row’s card (same semantics as task detail). */
   onToggleTableStopwatch?: (cardId: string) => void;
   onMoveCardToColumn?: (cardId: string, fromCol: number, toCol: number) => void;
   onAddCard?: (columnIndex: number) => void;
@@ -110,9 +101,7 @@ type Props = {
   translateTableRowX: SharedValue<number>;
   translateTableRowY: SharedValue<number>;
   scaleTableRow: SharedValue<number>;
-  /** Disable row drag (e.g. card expanded). */
   rowDragEnabled?: boolean;
-  /** Toggle task labels from the Labels column context menu. */
   onSetCardLabels?: (cardId: string, labels: TaskLabel[]) => void;
 };
 

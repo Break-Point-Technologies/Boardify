@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-/** Horizontal gap while reordering lists (matches [BoardColumn.tsx](BoardColumn.tsx) wrap width + margin). */
 const PLACEHOLDER_MIN_HEIGHT = 200;
 
 export function BoardColumnPlaceholder() {
