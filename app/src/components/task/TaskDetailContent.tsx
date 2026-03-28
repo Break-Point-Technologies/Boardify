@@ -51,6 +51,7 @@ type Props = {
 
 export function TaskDetailContent({ task, onChange }: Props) {
   const [memberPickerOpen, setMemberPickerOpen] = useState(false);
+  const [labelsSectionOpen, setLabelsSectionOpen] = useState(true);
   const [activeDateField, setActiveDateField] = useState<TaskDatetimeFieldKey | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const membersSectionYRef = useRef(0);
@@ -261,37 +262,74 @@ export function TaskDetailContent({ task, onChange }: Props) {
           />
         </Section>
 
-        <Section title="Labels" icon="tag">
-          <Text style={styles.labelHint}>Tap a label to turn it on or off.</Text>
-          <View style={styles.chipWrap}>
-            {LABEL_PRESETS.map((l) => {
-              const on = labels.some((x) => x.id === l.id);
-              return (
-                <Pressable
-                  key={l.id}
-                  onPress={() => toggleLabel(l)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
-                  accessibilityLabel={`${l.name}${on ? ', selected' : ''}`}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    on ? [styles.chipOn, { backgroundColor: l.color }] : styles.chipOff,
-                    pressed && styles.chipPressed,
-                  ]}
-                >
-                  {on ? (
-                    <View style={styles.chipCheck}>
-                      <Feather name="check" size={14} color="#0a0a0a" />
-                    </View>
-                  ) : null}
-                  <Text style={[styles.chipText, on && styles.chipTextOn]} numberOfLines={1}>
-                    {l.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Section>
+        <View style={styles.section}>
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              setLabelsSectionOpen((o) => !o);
+            }}
+            style={({ pressed }) => [
+              styles.labelsCollapsibleHead,
+              pressed && styles.labelsCollapsibleHeadPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: labelsSectionOpen }}
+            accessibilityLabel={`Labels, ${labelsSectionOpen ? 'expanded' : 'collapsed'}`}
+          >
+            <View style={styles.labelsCollapsibleHeadLeft}>
+              <Feather name="tag" size={16} color="#666" />
+              <Text style={styles.sectionTitle}>Labels</Text>
+            </View>
+            <View style={styles.labelsSummarySpacer} />
+            <Feather
+              name={labelsSectionOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#444"
+              style={styles.labelsCollapsibleChevron}
+            />
+          </Pressable>
+          {labelsSectionOpen ? (
+            <View style={styles.sectionCardWrap}>
+              <View style={styles.sectionCardShadow} />
+              <View style={styles.sectionCard}>
+                <Text style={styles.labelHint}>Tap a row to turn a label on or off.</Text>
+                <View style={styles.labelList}>
+                  {LABEL_PRESETS.map((l, index) => {
+                    const on = labels.some((x) => x.id === l.id);
+                    return (
+                      <Pressable
+                        key={l.id}
+                        onPress={() => toggleLabel(l)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${l.name} label${on ? ', selected' : ', not selected'}`}
+                        style={({ pressed }) => [
+                          styles.labelRowOuter,
+                          index < LABEL_PRESETS.length - 1 && styles.labelRowBorder,
+                          on && styles.labelRowSelected,
+                          pressed && styles.labelRowPressed,
+                        ]}
+                      >
+                        <View style={styles.labelRow}>
+                          <View style={[styles.labelSwatch, { backgroundColor: l.color }]} />
+                          <Text
+                            style={[styles.labelRowName, on && styles.labelRowNameOn]}
+                            numberOfLines={1}
+                          >
+                            {l.name}
+                          </Text>
+                          <View style={[styles.labelRowToggle, on && styles.labelRowToggleOn]}>
+                            {on ? <Feather name="check" size={18} color="#0a0a0a" /> : null}
+                          </View>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          ) : null}
+        </View>
 
         <View
           onLayout={(e) => {
@@ -299,25 +337,37 @@ export function TaskDetailContent({ task, onChange }: Props) {
           }}
         >
           <Section title="Members" icon="users">
-            <View style={styles.memberRow}>
-              <View style={styles.memberAssigneesCluster}>
-                {assignees.map((m) => (
-                  <Pressable
-                    key={m.id}
-                    onPress={() => removeMember(m.id)}
-                    accessibilityLabel={`${m.name}, assigned. Tap to remove from card.`}
-                    style={({ pressed }) => [styles.memberChip, pressed && styles.memberChipPressed]}
-                  >
-                    <View style={styles.memberChipAvatar}>
-                      <Text style={styles.memberChipAvatarText}>{m.initials}</Text>
-                    </View>
-                    <View style={styles.memberChipRemoveRow} accessibilityElementsHidden={true}>
-                      <View style={styles.memberChipRemoveIcon}>
-                        <Feather name="x" size={15} color="#525252" />
-                      </View>
-                    </View>
-                  </Pressable>
-                ))}
+            <View style={styles.memberRowShell}>
+              <View style={styles.memberRowBody}>
+                {assignees.length > 0 ? (
+                  <View style={styles.memberAssigneesCluster}>
+                    {assignees.map((m) => (
+                      <Pressable
+                        key={m.id}
+                        onPress={() => removeMember(m.id)}
+                        accessibilityLabel={`${m.name}, assigned. Tap to remove from card.`}
+                        style={({ pressed }) => [styles.memberChip, pressed && styles.memberChipPressed]}
+                      >
+                        <View style={styles.memberChipAvatar}>
+                          <Text style={styles.memberChipAvatarText}>{m.initials}</Text>
+                        </View>
+                        <View style={styles.memberChipRemoveRow} accessibilityElementsHidden={true}>
+                          <View style={styles.memberChipRemoveIcon}>
+                            <Feather name="x" size={15} color="#525252" />
+                          </View>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.memberRowLead}>
+                    {!memberPickerOpen ? (
+                      <Text style={styles.memberHintInRow} numberOfLines={2}>
+                        Tap + to add someone.
+                      </Text>
+                    ) : null}
+                  </View>
+                )}
               </View>
               <Pressable
                 onPress={toggleMemberPickerHere}
@@ -372,8 +422,6 @@ export function TaskDetailContent({ task, onChange }: Props) {
             ) : null}
             {memberPickerOpen ? (
               <Text style={styles.memberHint}>Tap a profile or its remove control to take someone off the card.</Text>
-            ) : assignees.length === 0 ? (
-              <Text style={styles.memberHint}>Tap + to add someone.</Text>
             ) : null}
           </Section>
         </View>
@@ -786,9 +834,21 @@ const styles = StyleSheet.create({
   memberHint: {
     fontSize: 12,
     color: '#9ca3af',
-    marginTop: 2,
+    marginTop: 8,
     marginBottom: 0,
     lineHeight: 16,
+  },
+  memberRowLead: {
+    minWidth: 0,
+    minHeight: 56,
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
+  memberHintInRow: {
+    fontSize: 13,
+    color: '#9ca3af',
+    lineHeight: 18,
+    fontWeight: '500',
   },
   labelHint: {
     fontSize: 13,
@@ -796,72 +856,108 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 18,
   },
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 10,
-    rowGap: 10,
-  },
-  chip: {
+  labelsCollapsibleHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 44,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    paddingRight: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    marginRight: 0,
-    marginBottom: 0,
+    marginBottom: 10,
+    minHeight: 28,
   },
-  chipOff: {
-    backgroundColor: '#f3f3f3',
-  },
-  chipOn: {
-    borderWidth: 2,
-    paddingVertical: 9,
-    paddingHorizontal: 11,
-    paddingRight: 13,
-  },
-  chipPressed: {
+  labelsCollapsibleHeadPressed: {
     opacity: 0.88,
-    transform: [{ scale: 0.98 }],
   },
-  chipCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.65)',
-    borderWidth: 1,
-    borderColor: '#000',
+  labelsCollapsibleHeadLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
+    gap: 8,
+    flexShrink: 0,
   },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333',
-    flexShrink: 1,
+  labelsSummarySpacer: {
+    flex: 1,
+    minWidth: 0,
   },
-  chipTextOn: {
+  labelsCollapsibleChevron: {
+    flexShrink: 0,
+  },
+  labelList: {
+    marginTop: 0,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  labelRowOuter: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    minHeight: 48,
+    paddingVertical: 10,
+    paddingRight: 4,
+    paddingLeft: 0,
+  },
+  labelRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e5e5',
+  },
+  labelRowSelected: {
+    backgroundColor: '#f5f5f5',
+  },
+  labelRowPressed: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  labelSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#000',
+    marginLeft: 10,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  labelRowName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#444',
+    minWidth: 0,
+  },
+  labelRowNameOn: {
     color: '#0a0a0a',
     fontWeight: '800',
   },
-  memberRow: {
+  labelRowToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#c4c4c4',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  labelRowToggleOn: {
+    borderColor: '#000',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  memberRowShell: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 14,
-    paddingVertical: 4,
+    width: '100%',
     marginBottom: 2,
+    paddingBottom: 4,
+    gap: 12,
+  },
+  memberRowBody: {
+    flex: 1,
+    minWidth: 0,
   },
   memberAssigneesCluster: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    flex: 1,
     alignItems: 'flex-start',
     gap: 16,
     minWidth: 0,

@@ -246,15 +246,7 @@ export function BoardCardExpandOverlay({
         <Animated.View style={shellOuterStyle} pointerEvents="box-none">
           <Animated.View style={shellNeubShadowStyle} pointerEvents="none" />
           <Animated.View style={shellInnerClipStyle}>
-            <Animated.View
-              style={[
-                styles.cardFace,
-                cardOutlineStyle,
-                card.labelColor
-                  ? { borderLeftWidth: 4, borderLeftColor: card.labelColor }
-                  : undefined,
-              ]}
-            >
+            <Animated.View style={[styles.cardFace, cardOutlineStyle]}>
               <Animated.View style={[styles.cardFaceHeader, headerChromeStyle, headerRevealStyle]}>
                 <Text style={styles.columnBadge} numberOfLines={1}>
                   {layoutInfo.columnTitle}
