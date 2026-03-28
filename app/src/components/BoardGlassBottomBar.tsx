@@ -10,15 +10,20 @@ import {
 } from 'expo-glass-effect';
 import { hapticLight } from '../utils/haptics';
 import { GlassRoundIconButton } from './GlassRoundIconButton';
+import { ContextMenu } from './ContextMenu';
 
 const ICON_COLOR = '#0a0a0a';
 const ICON_SIZE = 22;
+
+export type BoardBottomBarLayoutMode = 'board' | 'list' | 'calendar';
 
 export type BoardGlassBottomBarProps = {
   onFilterPress?: () => void;
   onBellPress?: () => void;
   onSettingsPress?: () => void;
   onExpandPress?: () => void;
+  /** Bottom “Board / List / Calendar” layout menu (left of the triple pill). */
+  onLayoutMenuSelect?: (mode: BoardBottomBarLayoutMode) => void;
 };
 
 type GlassTripleStripProps = {
@@ -49,10 +54,17 @@ const PILL_TRACK_HEIGHT = TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2;
 const EXPAND_INTERACTION_OVERFLOW = 40;
 const GLASS_ROW_MIN_HEIGHT = PILL_TRACK_HEIGHT + EXPAND_INTERACTION_OVERFLOW;
 export const BOARD_GLASS_BOTTOM_BAR_CLEARANCE = 96 + EXPAND_INTERACTION_OVERFLOW;
-/** Explicit width so the bar shell matches pill + gap + orb. */
-const ROW_TOTAL_WIDTH = TRIPLE_PILL_WIDTH + ROW_GAP + EXPAND_ORB_SIZE;
-/** Horizontal distance from row’s left edge (pill’s left) to the bell column’s center. */
-const BELL_CENTER_X_FROM_ROW_LEFT =
+/** Left layout-menu orb (matches expand orb for symmetry). */
+const LAYOUT_MENU_ORB_SIZE = 45;
+/** Pill + gap + expand only (fallback row when native glass merge is off). */
+const GLASS_PAIR_WIDTH = TRIPLE_PILL_WIDTH + ROW_GAP + EXPAND_ORB_SIZE;
+/**
+ * Full bar width (shell + fallback). Merged glass uses inner margins so visual gaps match `ROW_GAP - EXPAND_SHIFT_LEFT`.
+ */
+const ROW_TOTAL_WIDTH =
+  LAYOUT_MENU_ORB_SIZE + ROW_GAP + GLASS_PAIR_WIDTH - EXPAND_SHIFT_LEFT;
+/** From **pill** left edge to bell column center (for window centering). */
+const BELL_CENTER_X_FROM_PILL_LEFT =
   TRIPLE_PILL_PADDING_H + TRIPLE_SLOT + TRIPLE_ICON_GAP + TRIPLE_SLOT / 2;
 
 function TripleIconColumn({
@@ -113,10 +125,66 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Glass
   return <View style={[styles.tripleGlass, styles.tripleFallback]}>{row}</View>;
 }
 
-/**
- * Same pattern as `GlassRoundIconButton`: `Pressable` wraps `GlassView` with `isInteractive`.
- * A sibling `Pressable` outside `GlassContainer` often loses hit tests to the native glass subtree.
- */
+function BoardBottomLayoutMenu({
+  onSelect,
+  inGlassMerge,
+}: {
+  onSelect?: (mode: BoardBottomBarLayoutMode) => void;
+  /** When true, menu sits inside `GlassContainer` (merge may differ from pill; avoids expo+Swift double-glass ghost). */
+  inGlassMerge?: boolean;
+}) {
+  const noop = () => {};
+  const options = useMemo(
+    () =>
+      (
+        [
+          { label: 'Board', value: 'board' as const },
+          { label: 'List', value: 'list' as const },
+          { label: 'Calendar', value: 'calendar' as const },
+        ] as const
+      ).map(({ label, value }) => ({
+        label,
+        value,
+        onPress: () => {
+          (onSelect ?? noop)(value);
+        },
+      })),
+    [onSelect],
+  );
+
+  const menu = (
+    <ContextMenu
+      options={options}
+      hostMatchContents
+      iosGlassMenuTrigger
+      triggerWrapperStyle={styles.leftMenuTriggerWrap}
+      trigger={
+        <GlassRoundIconButton
+          icon="layout"
+          size={ICON_SIZE}
+          accessibilityLabel="Layout and views"
+          embedInSwiftMenu={Platform.OS === 'ios'}
+          onPress={() => {}}
+        />
+      }
+    />
+  );
+
+  if (inGlassMerge) {
+    return (
+      <View style={styles.layoutMenuInGlassSlot} collapsable={false}>
+        {menu}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.leftMenuOrbSlot} collapsable={false}>
+      {menu}
+    </View>
+  );
+}
+
 function BoardExpandGlassPressable({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
@@ -147,6 +215,7 @@ export function BoardGlassBottomBar({
   onBellPress,
   onSettingsPress,
   onExpandPress,
+  onLayoutMenuSelect,
 }: BoardGlassBottomBarProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -155,7 +224,12 @@ export function BoardGlassBottomBar({
 
   /** Align bell with window horizontal center (reference: centered “middle mark” toolbars). */
   const rowLeft = useMemo(
-    () => windowWidth / 2 - BELL_CENTER_X_FROM_ROW_LEFT,
+    () =>
+      windowWidth / 2 -
+      LAYOUT_MENU_ORB_SIZE -
+      ROW_GAP +
+      EXPAND_SHIFT_LEFT -
+      BELL_CENTER_X_FROM_PILL_LEFT,
     [windowWidth],
   );
 
@@ -190,32 +264,39 @@ export function BoardGlassBottomBar({
         ]}
       >
         <View style={styles.barTrack} pointerEvents="box-none">
-          {useNativeGlass ? (
-            <View
-              collapsable={false}
-              style={[styles.rowShell, { left: rowLeft, width: ROW_TOTAL_WIDTH }]}
-            >
+          <View
+            collapsable={false}
+            style={[styles.rowShell, { left: rowLeft, width: ROW_TOTAL_WIDTH }]}
+          >
+            {useNativeGlass ? (
               <GlassContainer
                 spacing={ROW_GAP}
                 pointerEvents="box-none"
                 style={styles.glassMergedRow}
               >
+                <BoardBottomLayoutMenu
+                  onSelect={onLayoutMenuSelect}
+                  inGlassMerge
+                />
                 {strip}
                 <BoardExpandGlassPressable onPress={onExpand} />
               </GlassContainer>
-            </View>
-          ) : (
-            <View style={[styles.row, { left: rowLeft }]}>
-              {strip}
-              <View style={styles.expandFallbackNudge}>
-                <GlassRoundIconButton
-                  icon="maximize-2"
-                  accessibilityLabel="Expand"
-                  onPress={onExpand}
-                />
+            ) : (
+              <View style={styles.bottomBarRow} pointerEvents="box-none">
+                <BoardBottomLayoutMenu onSelect={onLayoutMenuSelect} />
+                <View style={styles.fallbackGlassPair} pointerEvents="box-none">
+                  {strip}
+                  <View style={styles.expandFallbackNudge}>
+                    <GlassRoundIconButton
+                      icon="maximize-2"
+                      accessibilityLabel="Expand"
+                      onPress={onExpand}
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -251,26 +332,53 @@ const styles = StyleSheet.create({
     minHeight: GLASS_ROW_MIN_HEIGHT,
     overflow: 'visible',
   },
+  bottomBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ROW_GAP,
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    overflow: 'visible',
+  },
+  /** Bounds Android `ContextMenu` root `width: '100%'` so the bottom row doesn’t stretch. */
+  /** Match expand orb spacing: `expandPressable` uses `marginLeft: -EXPAND_SHIFT_LEFT` toward the pill. */
+  leftMenuOrbSlot: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    marginRight: -EXPAND_SHIFT_LEFT,
+    overflow: 'visible',
+  },
+  leftMenuTriggerWrap: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** Holds layout `ContextMenu` inside `GlassContainer` (Android width bound). */
+  layoutMenuInGlassSlot: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    marginRight: -EXPAND_SHIFT_LEFT,
+    overflow: 'visible',
+  },
   /**
    * Taller than the pill so native glass has room for morphs; `center` aligns 45px orb with 52px pill.
    * (`flex-end` matched bottoms and made the orb look visually low.)
    */
   glassMergedRow: {
-    width: '100%',
+    width: ROW_TOTAL_WIDTH,
     minHeight: GLASS_ROW_MIN_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: ROW_GAP,
     overflow: 'visible',
   },
-  row: {
-    position: 'absolute',
-    bottom: 0,
-    width: ROW_TOTAL_WIDTH,
+  fallbackGlassPair: {
+    width: GLASS_PAIR_WIDTH,
     minHeight: GLASS_ROW_MIN_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: ROW_GAP,
+    overflow: 'visible',
   },
   expandPressable: {
     opacity: 1,

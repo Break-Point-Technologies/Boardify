@@ -22,6 +22,8 @@ let Button: any;
 let Section: any;
 let Host: any;
 let menuGlassModifiers: any[] | undefined;
+/** Removes default SwiftUI `Menu` label chrome when the trigger is custom (e.g. expo `GlassView`). */
+let menuPlainLabelModifiers: any[] | undefined;
 
 if (Platform.OS === 'ios') {
   try {
@@ -33,6 +35,8 @@ if (Platform.OS === 'ios') {
     Section = swiftUI.Section;
     Host = swiftUI.Host;
     menuGlassModifiers = [buttonStyle('glass')];
+    // `plain` still leaves a label chrome; `borderless` minimizes the SwiftUI `Menu` label button.
+    menuPlainLabelModifiers = [buttonStyle('borderless')];
   } catch (error) {
     console.warn('SwiftUI components not available');
   }
@@ -68,7 +72,9 @@ export function ContextMenu({
   const iosMenuModifiers =
     iosGlassMenuTrigger && menuGlassModifiers && menuGlassModifiers.length > 0
       ? menuGlassModifiers
-      : [];
+      : !iosGlassMenuTrigger && menuPlainLabelModifiers && menuPlainLabelModifiers.length > 0
+        ? menuPlainLabelModifiers
+        : [];
   const [androidMenuVisible, setAndroidMenuVisible] = useState(false);
   const androidMenuOpacity = useRef(new Animated.Value(0)).current;
   const androidMenuScale = useRef(new Animated.Value(0.9)).current;
@@ -174,9 +180,8 @@ export function ContextMenu({
     );
 
     const triggerWrapStyle = [
-      styles.triggerWrapper,
+      iosGlassMenuTrigger ? styles.triggerWrapper : styles.triggerWrapperCustomLabel,
       styles.triggerWrapperIos,
-      !iosGlassMenuTrigger && styles.triggerWrapperPlain,
       triggerWrapperStyle,
     ];
     const hostSlotStyle = [styles.iosHostSlot];
@@ -336,8 +341,13 @@ const styles = StyleSheet.create({
     zIndex: 40,
     elevation: 0,
   },
-  triggerWrapperPlain: {
-    borderRadius: 0,
+  /** Custom triggers (e.g. expo `GlassView`): no rounded clip — avoids a second “pill” behind SwiftUI `Menu`. */
+  triggerWrapperCustomLabel: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    overflow: 'visible',
+    zIndex: 40,
+    elevation: 0,
   },
   triggerWrapperIos: {
     overflow: 'visible',

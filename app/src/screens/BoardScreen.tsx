@@ -404,6 +404,17 @@ export default function BoardScreen({
     [onBoardViewSelect]
   );
 
+  const boardGlassBottomBarProps = useMemo((): BoardGlassBottomBarProps => {
+    return {
+      onLayoutMenuSelect: (mode) => {
+        const view: BoardViewMode =
+          mode === 'list' ? 'table' : mode === 'board' ? 'board' : 'calendar';
+        onBoardViewSelect?.(view);
+      },
+      ...glassBottomBar,
+    };
+  }, [glassBottomBar, onBoardViewSelect]);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -528,7 +539,7 @@ export default function BoardScreen({
         </View>
       ) : null}
 
-      <BoardGlassBottomBar {...glassBottomBar} />
+      <BoardGlassBottomBar {...boardGlassBottomBarProps} />
 
       {expanded ? (
         <BoardCardExpandOverlay
