@@ -252,13 +252,14 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   /**
-   * Taller than the pill so native glass has room above; bottom-align so overflow is above controls.
+   * Taller than the pill so native glass has room for morphs; `center` aligns 45px orb with 52px pill.
+   * (`flex-end` matched bottoms and made the orb look visually low.)
    */
   glassMergedRow: {
     width: '100%',
     minHeight: GLASS_ROW_MIN_HEIGHT,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: ROW_GAP,
     overflow: 'visible',
   },
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     width: ROW_TOTAL_WIDTH,
     minHeight: GLASS_ROW_MIN_HEIGHT,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: ROW_GAP,
   },
   expandPressable: {
