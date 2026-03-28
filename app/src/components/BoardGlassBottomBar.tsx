@@ -1,12 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  View,
-  Platform,
-  TouchableWithoutFeedback,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, StyleSheet, View, Platform, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -45,8 +38,16 @@ const TRIPLE_INNER_WIDTH = TRIPLE_SLOT * 3 + TRIPLE_ICON_GAP * 2;
 const TRIPLE_PILL_WIDTH = TRIPLE_INNER_WIDTH + TRIPLE_PILL_PADDING_H * 2;
 const TRIPLE_ROW_HEIGHT = 44;
 
-/** Gap between pill and expand; must match `styles.row.gap`. */
-const ROW_GAP = 8;
+/** Gap between pill and expand. */
+const ROW_GAP = 16;
+const EXPAND_ORB_SIZE = 45;
+const PILL_TRACK_HEIGHT = TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2;
+/** Top inset to vertically center the expand hit target in the row. */
+const EXPAND_ORB_TOP = (PILL_TRACK_HEIGHT - EXPAND_ORB_SIZE) / 2;
+/** Explicit width so the bar shell matches pill + gap + orb. */
+const ROW_TOTAL_WIDTH = TRIPLE_PILL_WIDTH + ROW_GAP + EXPAND_ORB_SIZE;
+/** X offset of expand orb’s left edge from the bar shell’s left edge. */
+const EXPAND_ORB_LEFT = TRIPLE_PILL_WIDTH + ROW_GAP;
 /** Horizontal distance from row’s left edge (pill’s left) to the bell column’s center. */
 const BELL_CENTER_X_FROM_ROW_LEFT =
   TRIPLE_PILL_PADDING_H + TRIPLE_SLOT + TRIPLE_ICON_GAP + TRIPLE_SLOT / 2;
@@ -110,30 +111,26 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Glass
 }
 
 /**
- * Direct `GlassView` sibling for `GlassContainer` merge on iOS.
- *
- * `isInteractive={false}` avoids the extra native liquid-glass touch lens (misaligned “white blob”).
- * Do not use `Pressable` here: pressed-state opacity/styles composite badly with `GlassView` and show
- * a circular press artifact. `TouchableWithoutFeedback` triggers the action with zero visual overlay.
+ * Visual-only orb for `GlassContainer` merge. Touches are handled by a sibling overlay `Pressable`
+ * — nested `Pressable` inside native `GlassView` often does not receive hits on iOS.
  */
-function BoardExpandGlassNative({ onPress }: { onPress: () => void }) {
+function BoardExpandGlassNative() {
   return (
     <GlassView
+      pointerEvents="none"
       isInteractive={false}
       colorScheme="light"
       tintColor="rgba(255, 255, 255, 0.42)"
       style={styles.expandGlass}
     >
-      <TouchableWithoutFeedback
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel="Expand"
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      <View
+        style={styles.expandGlassInner}
+        pointerEvents="none"
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
       >
-        <View style={styles.expandGlassInner} collapsable={false}>
-          <Feather name="maximize-2" size={ICON_SIZE} color={ICON_COLOR} />
-        </View>
-      </TouchableWithoutFeedback>
+        <Feather name="maximize-2" size={ICON_SIZE} color={ICON_COLOR} />
+      </View>
     </GlassView>
   );
 }
@@ -187,13 +184,27 @@ export function BoardGlassBottomBar({
       >
         <View style={styles.barTrack} pointerEvents="box-none">
           {useNativeGlass ? (
-            <GlassContainer
-              spacing={22}
-              style={[styles.row, { left: rowLeft }]}
-            >
-              {strip}
-              <BoardExpandGlassNative onPress={onExpand} />
-            </GlassContainer>
+            <View style={[styles.rowShell, { left: rowLeft, width: ROW_TOTAL_WIDTH }]}>
+              <GlassContainer
+                spacing={22}
+                pointerEvents="box-none"
+                style={styles.glassMergedRow}
+              >
+                {strip}
+                <BoardExpandGlassNative />
+              </GlassContainer>
+              <Pressable
+                onPress={onExpand}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Expand"
+                android_ripple={null}
+                style={[
+                  styles.expandHitOverlay,
+                  { left: EXPAND_ORB_LEFT, top: EXPAND_ORB_TOP },
+                ]}
+              />
+            </View>
           ) : (
             <View style={[styles.row, { left: rowLeft }]}>
               {strip}
@@ -223,20 +234,43 @@ const styles = StyleSheet.create({
   /** Full-bleed horizontal space so `left` matches screen coordinates (no padding skew). */
   barTrack: {
     width: '100%',
-    minHeight: TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2,
+    minHeight: PILL_TRACK_HEIGHT,
     position: 'relative',
+    overflow: 'visible',
   },
-  row: {
+  rowShell: {
     position: 'absolute',
     top: 0,
+    minHeight: PILL_TRACK_HEIGHT,
+  },
+  /** Fills `rowShell`; native glass merge for pill + orb. */
+  glassMergedRow: {
+    width: '100%',
+    minHeight: PILL_TRACK_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: ROW_GAP,
   },
+  row: {
+    position: 'absolute',
+    top: 0,
+    width: ROW_TOTAL_WIDTH,
+    minHeight: PILL_TRACK_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ROW_GAP,
+  },
+  expandHitOverlay: {
+    position: 'absolute',
+    width: EXPAND_ORB_SIZE,
+    height: EXPAND_ORB_SIZE,
+    zIndex: 50,
+    backgroundColor: 'transparent',
+  },
   tripleGlass: {
     width: TRIPLE_PILL_WIDTH,
     minWidth: TRIPLE_PILL_WIDTH,
-    height: TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2,
+    height: PILL_TRACK_HEIGHT,
     borderRadius: 26,
     overflow: 'hidden',
   },
@@ -281,14 +315,14 @@ const styles = StyleSheet.create({
     }),
   },
   expandGlass: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
+    width: EXPAND_ORB_SIZE,
+    height: EXPAND_ORB_SIZE,
+    borderRadius: EXPAND_ORB_SIZE / 2,
     overflow: 'hidden',
   },
   expandGlassInner: {
-    width: 45,
-    height: 45,
+    width: EXPAND_ORB_SIZE,
+    height: EXPAND_ORB_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
