@@ -1,5 +1,7 @@
 /// <reference types="nativewind/types" />
 
+declare module '*.css';
+
 declare module '@env' {
   export const VITE_API_BASE: string | undefined;
   export const VITE_APP_URL: string | undefined;
