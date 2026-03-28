@@ -25,9 +25,43 @@ export function moveCardToHover(
 
 export function computeHoverInsertIndex(
   localYInList: number,
-  virtualCardCount: number
+  virtualCardCount: number,
+  rowHeight: number = BOARD_CARD_ROW_HEIGHT
 ): number {
-  const row = BOARD_CARD_ROW_HEIGHT;
-  const idx = Math.floor(Math.max(0, localYInList) / row);
+  const idx = Math.floor(Math.max(0, localYInList) / rowHeight);
   return Math.max(0, Math.min(virtualCardCount, idx));
+}
+
+export const TABLE_ROW_SLOT_HEIGHT = 68;
+
+export function computeColumnHoverInsertIndex(
+  absX: number,
+  layouts: Array<{ x: number; width: number } | null | undefined>,
+  columnCount: number,
+  skipColumnIndex: number | null = null
+): number {
+  for (let i = 0; i < columnCount; i++) {
+    if (skipColumnIndex === i) continue;
+    const L = layouts[i];
+    if (!L || L.width <= 0) continue;
+    const mid = L.x + L.width / 2;
+    if (absX < mid) return i;
+  }
+  return columnCount;
+}
+
+export function reorderColumns(
+  columns: BoardColumnData[],
+  fromIndex: number,
+  insertBefore: number
+): BoardColumnData[] {
+  const n = columns.length;
+  if (fromIndex < 0 || fromIndex >= n) return columns;
+  const next = columns.slice();
+  const [col] = next.splice(fromIndex, 1);
+  let pos = insertBefore;
+  if (pos > fromIndex) pos -= 1;
+  pos = Math.max(0, Math.min(pos, next.length));
+  next.splice(pos, 0, col);
+  return next;
 }

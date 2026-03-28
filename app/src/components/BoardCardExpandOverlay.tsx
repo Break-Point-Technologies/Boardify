@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   interpolate,
+  interpolateColor,
   Extrapolation,
   runOnJS,
   Easing,
@@ -24,15 +25,16 @@ import type { BoardCardData } from '../types/board';
 import { TaskDetailContent } from './task/TaskDetailContent';
 
 const CARD_SHIFT = 4;
-const LIST_CARD_PAD_V = 10;
+
+const TEXT_FADE_IN: [number, number] = [0.1, 0.58];
 
 const openConfig = {
-  duration: 380,
+  duration: 400,
   easing: Easing.out(Easing.cubic),
 };
 
 const closeConfig = {
-  duration: 420,
+  duration: 400,
   easing: Easing.out(Easing.cubic),
 };
 
@@ -43,6 +45,7 @@ export type ExpandedCardLayout = {
   columnIndex: number;
   cardIndex: number;
   columnTitle: string;
+  cardId: string;
 };
 
 type Props = {
@@ -96,6 +99,24 @@ export function BoardCardExpandOverlay({
     th,
     progress,
   ]);
+
+  const headerChromeStyle = useMemo(
+    () => ({
+      paddingTop: Math.max(insets.top, 12),
+      paddingBottom: 10,
+      paddingHorizontal: 16,
+    }),
+    [insets.top]
+  );
+
+  const detailChromeStyle = useMemo(
+    () => ({
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: Math.max(insets.bottom, 24),
+    }),
+    [insets.bottom]
+  );
 
   const shellOuterStyle = useAnimatedStyle(() => {
     const t = progress.value;
@@ -166,46 +187,35 @@ export function BoardCardExpandOverlay({
     ),
   }));
 
-  const headerPaddingStyle = useAnimatedStyle(() => {
+  const headerRevealStyle = useAnimatedStyle(() => {
     const t = progress.value;
-    const topPad = Math.max(insets.top, 12);
+    const [a, b] = TEXT_FADE_IN;
     return {
-      paddingTop: interpolate(t, [0, 1], [0, topPad], Extrapolation.CLAMP),
-      paddingBottom: interpolate(t, [0, 0.18, 0.32, 1], [0, 0, 0, 10], Extrapolation.CLAMP),
-      paddingHorizontal: interpolate(t, [0, 0.18, 0.32, 1], [0, 0, 0, 16], Extrapolation.CLAMP),
-      maxHeight: interpolate(t, [0, 0.12, 0.28, 1], [0, 0, 88, 2000], Extrapolation.CLAMP),
-      overflow: 'hidden',
-      opacity: interpolate(t, [0, 0.12, 0.26, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
+      opacity: interpolate(t, [a, b], [0, 1], Extrapolation.CLAMP),
       transform: [
         {
-          translateY: interpolate(t, [0, 1], [6, 0], Extrapolation.CLAMP),
+          translateY: interpolate(t, [a, b], [8, 0], Extrapolation.CLAMP),
         },
       ],
-      borderBottomWidth: interpolate(t, [0, 0.2, 0.34, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: interpolateColor(
+        t,
+        [a * 0.5, a, b + 0.04],
+        ['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.08)']
+      ),
     };
   });
 
-  const detailBodyStyle = useAnimatedStyle(() => {
+  const detailContentRevealStyle = useAnimatedStyle(() => {
     const t = progress.value;
-    const bottomPad = Math.max(insets.bottom, 24);
+    const [a, b] = TEXT_FADE_IN;
     return {
-      paddingHorizontal: interpolate(t, [0, 1], [12, 20], Extrapolation.CLAMP),
-      paddingTop: interpolate(t, [0, 1], [10, 16], Extrapolation.CLAMP),
-      paddingBottom: interpolate(t, [0, 1], [LIST_CARD_PAD_V, bottomPad], Extrapolation.CLAMP),
-    };
-  });
-
-  const detailPlaceholderWrapStyle = useAnimatedStyle(() => {
-    const t = progress.value;
-    return {
-      opacity: interpolate(t, [0, 0.52, 0.68, 1], [0, 0, 1, 1], Extrapolation.CLAMP),
       flex: 1,
-      minHeight: interpolate(t, [0, 0.48, 0.62, 1], [0, 0, 200, 400], Extrapolation.CLAMP),
-      marginTop: interpolate(t, [0, 0.55, 0.75, 1], [0, 0, 8, 12], Extrapolation.CLAMP),
-      overflow: 'hidden',
+      minHeight: 0,
+      opacity: interpolate(t, [a, b], [0, 1], Extrapolation.CLAMP),
       transform: [
         {
-          translateY: interpolate(t, [0, 0.55, 1], [6, 2, 0], Extrapolation.CLAMP),
+          translateY: interpolate(t, [a, b], [12, 0], Extrapolation.CLAMP),
         },
       ],
     };
@@ -235,16 +245,8 @@ export function BoardCardExpandOverlay({
         <Animated.View style={shellOuterStyle} pointerEvents="box-none">
           <Animated.View style={shellNeubShadowStyle} pointerEvents="none" />
           <Animated.View style={shellInnerClipStyle}>
-            <Animated.View
-              style={[
-                styles.cardFace,
-                cardOutlineStyle,
-                card.labelColor
-                  ? { borderLeftWidth: 4, borderLeftColor: card.labelColor }
-                  : undefined,
-              ]}
-            >
-              <Animated.View style={[styles.cardFaceHeader, headerPaddingStyle]}>
+            <Animated.View style={[styles.cardFace, cardOutlineStyle]}>
+              <Animated.View style={[styles.cardFaceHeader, headerChromeStyle, headerRevealStyle]}>
                 <Text style={styles.columnBadge} numberOfLines={1}>
                   {layoutInfo.columnTitle}
                 </Text>
@@ -257,11 +259,11 @@ export function BoardCardExpandOverlay({
                   <Feather name="x" size={22} color="#0a0a0a" />
                 </Pressable>
               </Animated.View>
-              <Animated.View style={[styles.detailBody, detailBodyStyle]}>
-                <Animated.View style={[styles.detailScrollWrap, detailPlaceholderWrapStyle]}>
-                  <TaskDetailContent task={card} onChange={onUpdateCard} />
+              <View style={[styles.detailBody, detailChromeStyle]}>
+                <Animated.View style={[styles.detailScrollWrap, detailContentRevealStyle]}>
+                  <TaskDetailContent key={card.id} task={card} onChange={onUpdateCard} />
                 </Animated.View>
-              </Animated.View>
+              </View>
             </Animated.View>
           </Animated.View>
         </Animated.View>
@@ -286,9 +288,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   columnBadge: {
     flex: 1,

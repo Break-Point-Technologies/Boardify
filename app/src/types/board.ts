@@ -46,6 +46,7 @@ export type TaskWorkLogEntry = {
 export type BoardCardData = {
   id: string;
   title: string;
+  createdAtIso?: string;
   subtitle?: string;
   labelColor?: string;
   description?: string;
@@ -62,6 +63,7 @@ export type BoardCardData = {
 };
 
 export type BoardColumnData = {
+  id: string;
   title: string;
   cards: BoardCardData[];
 };

@@ -1,61 +1,98 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, StyleSheet, View, Platform, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import {
+  GlassView,
+  GlassContainer,
+  isLiquidGlassAvailable,
+  isGlassEffectAPIAvailable,
+} from 'expo-glass-effect';
 import { hapticLight } from '../utils/haptics';
 import { GlassRoundIconButton } from './GlassRoundIconButton';
-
-export const BOARD_GLASS_BOTTOM_BAR_CLEARANCE = 96;
+// import { ContextMenu } from './ContextMenu';
 
 const ICON_COLOR = '#0a0a0a';
 const ICON_SIZE = 22;
+
+export type BoardBottomBarLayoutMode = 'board' | 'list' | 'calendar';
 
 export type BoardGlassBottomBarProps = {
   onFilterPress?: () => void;
   onBellPress?: () => void;
   onSettingsPress?: () => void;
   onExpandPress?: () => void;
+  showExpandButton?: boolean;
+  expandActive?: boolean;
+  onLayoutMenuSelect?: (mode: BoardBottomBarLayoutMode) => void;
 };
 
-type TripleStripProps = {
+type GlassTripleStripProps = {
   onFilterPress: () => void;
   onBellPress: () => void;
   onSettingsPress: () => void;
 };
 
-function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: TripleStripProps) {
+const TRIPLE_ICON_GAP = 6;
+const TRIPLE_SLOT = 44;
+const TRIPLE_PILL_PADDING_H = 4;
+const TRIPLE_PILL_PADDING_V = 4;
+const TRIPLE_INNER_WIDTH = TRIPLE_SLOT * 3 + TRIPLE_ICON_GAP * 2;
+const TRIPLE_PILL_WIDTH = TRIPLE_INNER_WIDTH + TRIPLE_PILL_PADDING_H * 2;
+const TRIPLE_ROW_HEIGHT = 44;
+const ROW_GAP = 16;
+const EXPAND_SHIFT_LEFT = 3;
+const EXPAND_ORB_SIZE = 45;
+const PILL_TRACK_HEIGHT = TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2;
+const EXPAND_INTERACTION_OVERFLOW = 40;
+const GLASS_ROW_MIN_HEIGHT = PILL_TRACK_HEIGHT + EXPAND_INTERACTION_OVERFLOW;
+export const BOARD_GLASS_BOTTOM_BAR_CLEARANCE = 96 + EXPAND_INTERACTION_OVERFLOW;
+const LAYOUT_MENU_ORB_SIZE = 45;
+const GLASS_PAIR_WIDTH = TRIPLE_PILL_WIDTH + ROW_GAP + EXPAND_ORB_SIZE;
+const ROW_TOTAL_WIDTH_WITH_EXPAND = GLASS_PAIR_WIDTH - EXPAND_SHIFT_LEFT;
+const ROW_TOTAL_WIDTH_PILL_ONLY = TRIPLE_PILL_WIDTH;
+const BELL_CENTER_X_FROM_PILL_LEFT =
+  TRIPLE_PILL_PADDING_H + TRIPLE_SLOT + TRIPLE_ICON_GAP + TRIPLE_SLOT / 2;
+
+function TripleIconColumn({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.tripleColumn} collapsable={false}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        hitSlop={8}
+        onPress={onPress}
+        android_ripple={{ color: 'rgba(0,0,0,0.12)', borderless: true }}
+        style={({ pressed }) => [styles.triplePressable, pressed && styles.tripleSlotPressed]}
+      >
+        {children}
+      </Pressable>
+    </View>
+  );
+}
+
+function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: GlassTripleStripProps) {
   const isGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 
   const row = (
-    <View style={styles.tripleInner} collapsable={false}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Filter"
-        hitSlop={8}
-        onPress={onFilterPress}
-        style={styles.tripleSlot}
-      >
+    <View style={styles.tripleInner} collapsable={false} pointerEvents="box-none">
+      <TripleIconColumn label="Filter" onPress={onFilterPress}>
         <Feather name="sliders" size={ICON_SIZE} color={ICON_COLOR} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Notifications"
-        hitSlop={8}
-        onPress={onBellPress}
-        style={styles.tripleSlot}
-      >
+      </TripleIconColumn>
+      <TripleIconColumn label="Notifications" onPress={onBellPress}>
         <Feather name="bell" size={ICON_SIZE} color={ICON_COLOR} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Settings"
-        hitSlop={8}
-        onPress={onSettingsPress}
-        style={styles.tripleSlot}
-      >
+      </TripleIconColumn>
+      <TripleIconColumn label="Settings" onPress={onSettingsPress}>
         <Feather name="settings" size={ICON_SIZE} color={ICON_COLOR} />
-      </Pressable>
+      </TripleIconColumn>
     </View>
   );
 
@@ -75,14 +112,82 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Tripl
   return <View style={[styles.tripleGlass, styles.tripleFallback]}>{row}</View>;
 }
 
+function BoardExpandGlassPressable({
+  onPress,
+  active,
+}: {
+  onPress: () => void;
+  active?: boolean;
+}) {
+  return (
+    <Pressable
+      collapsable={false}
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={active ? 'Exit focused list view' : 'Focus one list at a time'}
+      android_ripple={null}
+      style={styles.expandPressable}
+    >
+      <GlassView
+        isInteractive
+        colorScheme="light"
+        tintColor="rgba(255, 255, 255, 0.42)"
+        style={styles.expandGlass}
+      >
+        <View style={styles.expandGlassInner} collapsable={false}>
+          <Feather name={active ? 'minimize-2' : 'maximize-2'} size={ICON_SIZE} color={ICON_COLOR} />
+        </View>
+      </GlassView>
+    </Pressable>
+  );
+}
+
 export function BoardGlassBottomBar({
   onFilterPress,
   onBellPress,
   onSettingsPress,
   onExpandPress,
+  onLayoutMenuSelect,
+  showExpandButton = true,
+  expandActive = false,
 }: BoardGlassBottomBarProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const noop = () => {};
+  const useNativeGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+
+  const rowTotalWidth = showExpandButton ? ROW_TOTAL_WIDTH_WITH_EXPAND : ROW_TOTAL_WIDTH_PILL_ONLY;
+
+  const rowLeft = useMemo(
+    () =>
+      showExpandButton
+        ? windowWidth / 2 + EXPAND_SHIFT_LEFT - BELL_CENTER_X_FROM_PILL_LEFT
+        : windowWidth / 2 - BELL_CENTER_X_FROM_PILL_LEFT,
+    [windowWidth, showExpandButton],
+  );
+
+  const strip = (
+    <GlassTripleStrip
+      onFilterPress={() => {
+        hapticLight();
+        (onFilterPress ?? noop)();
+      }}
+      onBellPress={() => {
+        hapticLight();
+        (onBellPress ?? noop)();
+      }}
+      onSettingsPress={() => {
+        hapticLight();
+        (onSettingsPress ?? noop)();
+      }}
+    />
+  );
+
+  const onExpand = () => {
+    hapticLight();
+    (onExpandPress ?? noop)();
+  };
 
   return (
     <View style={styles.anchor} pointerEvents="box-none">
@@ -92,29 +197,45 @@ export function BoardGlassBottomBar({
           { paddingBottom: Math.max(insets.bottom, 10) + 4 },
         ]}
       >
-        <View style={styles.row}>
-          <GlassTripleStrip
-            onFilterPress={() => {
-              hapticLight();
-              (onFilterPress ?? noop)();
-            }}
-            onBellPress={() => {
-              hapticLight();
-              (onBellPress ?? noop)();
-            }}
-            onSettingsPress={() => {
-              hapticLight();
-              (onSettingsPress ?? noop)();
-            }}
-          />
-          <GlassRoundIconButton
-            icon="maximize-2"
-            accessibilityLabel="Expand"
-            onPress={() => {
-              hapticLight();
-              (onExpandPress ?? noop)();
-            }}
-          />
+        <View style={styles.barTrack} pointerEvents="box-none">
+          <View
+            collapsable={false}
+            style={[styles.rowShell, { left: rowLeft, width: rowTotalWidth }]}
+          >
+            {useNativeGlass ? (
+              <GlassContainer
+                spacing={ROW_GAP}
+                pointerEvents="box-none"
+                style={[styles.glassMergedRow, { width: rowTotalWidth }]}
+              >
+                {strip}
+                {showExpandButton ? (
+                  <BoardExpandGlassPressable onPress={onExpand} active={expandActive} />
+                ) : null}
+              </GlassContainer>
+            ) : (
+              <View style={styles.bottomBarRow} pointerEvents="box-none">
+                <View
+                  style={[
+                    styles.fallbackGlassPair,
+                    !showExpandButton && styles.fallbackGlassPairCompact,
+                  ]}
+                  pointerEvents="box-none"
+                >
+                  {strip}
+                  {showExpandButton ? (
+                    <View style={styles.expandFallbackNudge}>
+                      <GlassRoundIconButton
+                        icon={expandActive ? 'minimize-2' : 'maximize-2'}
+                        accessibilityLabel={expandActive ? 'Exit focused list view' : 'Focus one list at a time'}
+                        onPress={onExpand}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -126,36 +247,132 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     pointerEvents: 'box-none',
-    zIndex: 50,
+    zIndex: 20000,
+    elevation: 20000,
+    overflow: 'visible',
   },
   inner: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    width: '100%',
+    overflow: 'visible',
   },
-  row: {
+  barTrack: {
+    width: '100%',
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  rowShell: {
+    position: 'absolute',
+    bottom: 0,
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    overflow: 'visible',
+  },
+  bottomBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: ROW_GAP,
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    overflow: 'visible',
+  },
+  leftMenuOrbSlot: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    marginRight: -EXPAND_SHIFT_LEFT,
+    overflow: 'visible',
+  },
+  leftMenuTriggerWrap: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  layoutMenuInGlassSlot: {
+    width: LAYOUT_MENU_ORB_SIZE,
+    height: LAYOUT_MENU_ORB_SIZE,
+    marginRight: -EXPAND_SHIFT_LEFT,
+    overflow: 'visible',
+  },
+  glassMergedRow: {
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ROW_GAP,
+    overflow: 'visible',
+  },
+  fallbackGlassPair: {
+    width: GLASS_PAIR_WIDTH,
+    minHeight: GLASS_ROW_MIN_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ROW_GAP,
+    overflow: 'visible',
+  },
+  fallbackGlassPairCompact: {
+    width: TRIPLE_PILL_WIDTH,
+    gap: 0,
+  },
+  expandPressable: {
+    opacity: 1,
+    overflow: 'visible',
+    marginLeft: -EXPAND_SHIFT_LEFT,
+  },
+  expandFallbackNudge: {
+    marginLeft: -EXPAND_SHIFT_LEFT,
   },
   tripleGlass: {
+    width: TRIPLE_PILL_WIDTH,
+    minWidth: TRIPLE_PILL_WIDTH,
+    height: PILL_TRACK_HEIGHT,
     borderRadius: 26,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
     overflow: 'hidden',
   },
   tripleInner: {
+    position: 'absolute',
+    left: TRIPLE_PILL_PADDING_H,
+    right: TRIPLE_PILL_PADDING_H,
+    top: TRIPLE_PILL_PADDING_V,
+    bottom: TRIPLE_PILL_PADDING_V,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: TRIPLE_ICON_GAP,
   },
   tripleFallback: {
     borderWidth: 1,
     borderColor: '#000',
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
-  tripleSlot: {
-    width: 44,
-    height: 44,
+  tripleColumn: {
+    width: TRIPLE_SLOT,
+    height: TRIPLE_ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  triplePressable: {
+    width: TRIPLE_SLOT,
+    height: TRIPLE_SLOT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  tripleSlotPressed: {
+    backgroundColor: Platform.select({
+      ios: 'rgba(0, 0, 0, 0.08)',
+      default: 'rgba(0, 0, 0, 0.06)',
+    }),
+  },
+  expandGlass: {
+    width: EXPAND_ORB_SIZE,
+    height: EXPAND_ORB_SIZE,
+    borderRadius: EXPAND_ORB_SIZE / 2,
+    overflow: 'visible',
+  },
+  expandGlassInner: {
+    width: EXPAND_ORB_SIZE,
+    height: EXPAND_ORB_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
 });

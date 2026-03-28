@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigationState } from '@react-navigation/native';
@@ -79,9 +79,22 @@ export function ActivitiesHeader({
 
   const iconColor = '#0a0a0a';
 
-  const renderGlassRound = (icon: keyof typeof Feather.glyphMap, size = 22) => {
-    const glyph = <Feather name={icon} size={size} color={iconColor} />;
-    if (isGlassAvailable) {
+  const renderGlassRound = (
+    icon: keyof typeof Feather.glyphMap,
+    size = 22,
+    swiftMenuTrigger?: boolean
+  ) => {
+    const feather = <Feather name={icon} size={size} color={iconColor} />;
+    const glyph =
+      swiftMenuTrigger && Platform.OS === 'ios' ? (
+        <View style={styles.menuLabelGlyphNudge} collapsable={false}>
+          {feather}
+        </View>
+      ) : (
+        feather
+      );
+    const useRnGlass = isGlassAvailable && !(swiftMenuTrigger && Platform.OS === 'ios');
+    if (useRnGlass) {
       return (
         <GlassView
           isInteractive
@@ -94,7 +107,14 @@ export function ActivitiesHeader({
       );
     }
     return (
-      <View style={[styles.glassContainer, styles.glassFallbackLight, styles.centerIcon]}>
+      <View
+        style={[
+          styles.glassContainer,
+          swiftMenuTrigger && Platform.OS === 'ios'
+            ? styles.swiftMenuIconWrap
+            : [styles.glassFallbackLight, styles.centerIcon],
+        ]}
+      >
         {glyph}
       </View>
     );
@@ -149,13 +169,15 @@ export function ActivitiesHeader({
             <View style={[styles.homeOrb, styles.homeOrbLeading]} pointerEvents="box-none">
               <ContextMenu
                 options={boardSortMenuOptions}
+                hostMatchContents
+                triggerWrapperStyle={styles.contextMenuOrbTriggerWrap}
                 trigger={
                   <Pressable
                     hitSlop={12}
                     accessibilityLabel="Filter boards"
                     style={styles.glassPressable}
                   >
-                    {renderGlassRound('filter', 22)}
+                    {renderGlassRound('filter', 22, true)}
                   </Pressable>
                 }
               />
@@ -190,13 +212,15 @@ export function ActivitiesHeader({
               {isMessagesTab ? (
                 <ContextMenu
                   options={messageFilterMenuOptions}
+                  hostMatchContents
+                  triggerWrapperStyle={styles.contextMenuOrbTriggerWrap}
                   trigger={
                     <Pressable
                       hitSlop={12}
                       accessibilityLabel="Filter notifications"
                       style={styles.glassPressable}
                     >
-                      {renderGlassRound('filter', 22)}
+                      {renderGlassRound('filter', 22, true)}
                     </Pressable>
                   }
                 />
@@ -278,7 +302,7 @@ const styles = StyleSheet.create({
   },
   homeOrbLeading: {
     left: 0,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   homeOrbTrailing: {
     right: 0,
@@ -305,6 +329,22 @@ const styles = StyleSheet.create({
   glassPressable: {
     opacity: 1,
     overflow: 'visible',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contextMenuOrbTriggerWrap: {
+    width: 45,
+    minHeight: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swiftMenuIconWrap: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabelGlyphNudge: {
+    transform: [{ translateX: -11 }, { translateY: -6 }],
   },
   title: {
     fontSize: 22,

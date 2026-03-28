@@ -21,15 +21,21 @@ let SwiftMenu: any;
 let Button: any;
 let Section: any;
 let Host: any;
+let menuGlassModifiers: any[] | undefined;
+let menuPlainLabelModifiers: any[] | undefined;
 
 if (Platform.OS === 'ios') {
   try {
     const swiftUI = require('@expo/ui/swift-ui');
+    const { buttonStyle } = require('@expo/ui/swift-ui/modifiers');
     SwiftContextMenu = swiftUI.ContextMenu;
     SwiftMenu = swiftUI.Menu;
     Button = swiftUI.Button;
     Section = swiftUI.Section;
     Host = swiftUI.Host;
+    menuGlassModifiers = [buttonStyle('glass')];
+    // `plain` still leaves a label chrome; `borderless` minimizes the SwiftUI `Menu` label button.
+    menuPlainLabelModifiers = [buttonStyle('borderless')];
   } catch (error) {
     console.warn('SwiftUI components not available');
   }
@@ -48,6 +54,8 @@ interface ContextMenuProps {
   activationMethod?: 'singlePress' | 'longPress';
   onSinglePress?: () => void;
   triggerWrapperStyle?: StyleProp<ViewStyle>;
+  hostMatchContents?: boolean;
+  iosGlassMenuTrigger?: boolean;
 }
 
 export function ContextMenu({
@@ -57,7 +65,15 @@ export function ContextMenu({
   activationMethod = 'singlePress',
   onSinglePress,
   triggerWrapperStyle,
+  hostMatchContents = false,
+  iosGlassMenuTrigger = true,
 }: ContextMenuProps) {
+  const iosMenuModifiers =
+    iosGlassMenuTrigger && menuGlassModifiers && menuGlassModifiers.length > 0
+      ? menuGlassModifiers
+      : !iosGlassMenuTrigger && menuPlainLabelModifiers && menuPlainLabelModifiers.length > 0
+        ? menuPlainLabelModifiers
+        : [];
   const [androidMenuVisible, setAndroidMenuVisible] = useState(false);
   const androidMenuOpacity = useRef(new Animated.Value(0)).current;
   const androidMenuScale = useRef(new Animated.Value(0.9)).current;
@@ -163,7 +179,7 @@ export function ContextMenu({
     );
 
     const triggerWrapStyle = [
-      styles.triggerWrapper,
+      iosGlassMenuTrigger ? styles.triggerWrapper : styles.triggerWrapperCustomLabel,
       styles.triggerWrapperIos,
       triggerWrapperStyle,
     ];
@@ -171,9 +187,18 @@ export function ContextMenu({
 
     if (activationMethod === 'singlePress' && SwiftMenu) {
       return (
-        <View style={styles.iosSwiftMenuLift} collapsable={false}>
-          <Host colorScheme="light" style={hostSlotStyle}>
-            <SwiftMenu label={
+        <View
+          style={[styles.iosSwiftMenuLift, hostMatchContents && styles.iosOrbMenuHostRow]}
+          collapsable={false}
+        >
+          <Host
+            colorScheme="light"
+            style={hostSlotStyle}
+            matchContents={hostMatchContents ? true : undefined}
+          >
+            <SwiftMenu
+              modifiers={iosMenuModifiers}
+              label={
               <View
                 ref={triggerRef}
                 style={triggerWrapStyle}
@@ -192,9 +217,16 @@ export function ContextMenu({
 
     if (SwiftContextMenu) {
       return (
-        <View style={styles.iosSwiftMenuLift} collapsable={false}>
-          <Host colorScheme="light" style={hostSlotStyle}>
-            <SwiftContextMenu>
+        <View
+          style={[styles.iosSwiftMenuLift, hostMatchContents && styles.iosOrbMenuHostRow]}
+          collapsable={false}
+        >
+          <Host
+            colorScheme="light"
+            style={hostSlotStyle}
+            matchContents={hostMatchContents ? true : undefined}
+          >
+            <SwiftContextMenu modifiers={iosMenuModifiers}>
               <SwiftContextMenu.Trigger>
                 <View
                   ref={triggerRef}
@@ -291,7 +323,10 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     elevation: 0,
   },
-  /** Fills the parent; icon menus sit in 45px-wide headers, full-width rows use the card width. */
+  iosOrbMenuHostRow: {
+    width: '100%',
+    alignItems: 'center',
+  },
   iosHostSlot: {
     width: '100%',
     minWidth: 0,
@@ -302,6 +337,13 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 22.5,
     overflow: 'hidden',
+    zIndex: 40,
+    elevation: 0,
+  },
+  triggerWrapperCustomLabel: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    overflow: 'visible',
     zIndex: 40,
     elevation: 0,
   },
