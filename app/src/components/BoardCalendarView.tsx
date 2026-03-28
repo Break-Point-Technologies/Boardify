@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,13 @@ import {
 } from '../utils/calendarGrid';
 import type { BoardCardData, BoardColumnData } from '../types/board';
 
+export type CalendarTaskOpenLayout = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 const CAL_SHIFT = 5;
 const EDGE_PAD_H = Platform.select({ web: 24, default: 16 }) ?? 16;
 
@@ -35,7 +42,8 @@ type DueTaskRef = {
 type Props = {
   columns: BoardColumnData[];
   bottomClearance: number;
-  onOpenTask: (cardId: string) => void;
+  /** `layout` is window coordinates from the tapped row so the expand overlay animates from it. */
+  onOpenTask: (cardId: string, layout?: CalendarTaskOpenLayout) => void;
 };
 
 function weekdayShortLabels(): string[] {
@@ -53,6 +61,29 @@ const WEEKDAY_LABELS = weekdayShortLabels();
 export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Props) {
   const insets = useSafeAreaInsets();
   const { width: windowW } = useWindowDimensions();
+  const taskRowHostRefs = useRef<Record<string, View | null>>({});
+
+  const openAgendaTask = useCallback(
+    (card: BoardCardData) => {
+      hapticLight();
+      const el = taskRowHostRefs.current[card.id];
+      if (el && 'measureInWindow' in el) {
+        requestAnimationFrame(() => {
+          (el as View).measureInWindow((x, y, width, height) => {
+            onOpenTask(card.id, {
+              x: Math.round(x),
+              y: Math.round(y),
+              width: Math.max(1, Math.round(width)),
+              height: Math.max(1, Math.round(height)),
+            });
+          });
+        });
+      } else {
+        onOpenTask(card.id);
+      }
+    },
+    [onOpenTask]
+  );
   const innerMaxW = Math.min(windowW - (EDGE_PAD_H + insets.left + insets.right + CAL_SHIFT), 560);
 
   const now = new Date();
@@ -248,39 +279,45 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
               <Text style={styles.agendaEmpty}>Nothing due this day.</Text>
             ) : (
               selectedTasks.map(({ card, columnTitle }) => (
-                <Pressable
+                <View
                   key={card.id}
-                  onPress={() => {
-                    hapticLight();
-                    onOpenTask(card.id);
+                  ref={(r) => {
+                    if (r) taskRowHostRefs.current[card.id] = r;
+                    else delete taskRowHostRefs.current[card.id];
                   }}
-                  style={({ pressed }) => [styles.taskRow, pressed && styles.taskRowPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${card.title}, ${columnTitle}`}
+                  collapsable={false}
+                  style={styles.taskRowOuter}
                 >
-                  <View style={styles.taskRowInner}>
-                    <View
-                      style={[
-                        styles.taskStripe,
-                        {
-                          backgroundColor:
-                            card.labelColor ?? card.labels?.[0]?.color ?? '#e5e5e5',
-                        },
-                      ]}
-                    />
-                    <View style={styles.taskBody}>
-                      <Text style={styles.taskTitle} numberOfLines={2}>
-                        {card.title}
-                      </Text>
-                      <Text style={styles.taskMeta} numberOfLines={1}>
-                        {columnTitle}
-                      </Text>
+                  <Pressable
+                    onPress={() => openAgendaTask(card)}
+                    style={({ pressed }) => [styles.taskRow, pressed && styles.taskRowPressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${card.title}, ${columnTitle}`}
+                  >
+                    <View style={styles.taskRowInner}>
+                      <View
+                        style={[
+                          styles.taskStripe,
+                          {
+                            backgroundColor:
+                              card.labelColor ?? card.labels?.[0]?.color ?? '#e5e5e5',
+                          },
+                        ]}
+                      />
+                      <View style={styles.taskBody}>
+                        <Text style={styles.taskTitle} numberOfLines={2}>
+                          {card.title}
+                        </Text>
+                        <Text style={styles.taskMeta} numberOfLines={1}>
+                          {columnTitle}
+                        </Text>
+                      </View>
+                      <View style={styles.taskChevronWrap}>
+                        <Feather name="chevron-right" size={18} color="#999" />
+                      </View>
                     </View>
-                    <View style={styles.taskChevronWrap}>
-                      <Feather name="chevron-right" size={18} color="#999" />
-                    </View>
-                  </View>
-                </Pressable>
+                  </Pressable>
+                </View>
               ))
             )}
           </View>
@@ -483,12 +520,14 @@ const styles = StyleSheet.create({
     color: '#888',
     paddingVertical: 8,
   },
+  taskRowOuter: {
+    marginBottom: 8,
+  },
   taskRow: {
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 2,
     borderColor: '#000',
-    marginBottom: 8,
     overflow: 'hidden',
   },
   taskRowPressed: {

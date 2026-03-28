@@ -331,19 +331,28 @@ export default function BoardScreen({
   );
 
   const handleCalendarOpenTask = useCallback(
-    (cardId: string) => {
+    (
+      cardId: string,
+      layout?: { x: number; y: number; width: number; height: number }
+    ) => {
       for (let i = 0; i < columns.length; i++) {
         const j = columns[i].cards.findIndex((c) => c.id === cardId);
         if (j >= 0) {
-          const w = Math.round(Math.min(screenW * 0.92, 400));
-          const h = 100;
+          const fallbackW = Math.round(Math.min(screenW * 0.92, 400));
+          const fallbackH = 100;
+          const nextLayout = layout ?? {
+            x: Math.round((screenW - fallbackW) / 2),
+            y: Math.round(screenH * 0.52),
+            width: fallbackW,
+            height: fallbackH,
+          };
           setExpanded({
             columnTitle: columns[i].title,
             layout: {
-              x: Math.round((screenW - w) / 2),
-              y: Math.round((screenH - h) / 2),
-              width: w,
-              height: h,
+              x: Math.round(nextLayout.x),
+              y: Math.round(nextLayout.y),
+              width: Math.round(nextLayout.width),
+              height: Math.round(nextLayout.height),
             },
             columnIndex: i,
             cardIndex: j,
