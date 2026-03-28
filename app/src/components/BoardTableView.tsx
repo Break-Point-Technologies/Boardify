@@ -31,6 +31,9 @@ const TABLE_MIN_WIDTH = TABLE_INNER_WIDTH + TABLE_ROW_PADDING_H * 2;
 /** Offset shadow, matches [BoardColumn.tsx](BoardColumn.tsx) `COLUMN_SHIFT`. */
 const TABLE_SHIFT = 5;
 
+/** Horizontal inset so the table + shadow clear the display’s rounded corners. */
+const TABLE_EDGE_PADDING_H = Platform.select({ web: 24, default: 26 }) ?? 26;
+
 const ICON_MUTED = '#666';
 const TEXT_PRIMARY = '#0a0a0a';
 
@@ -111,10 +114,16 @@ export function BoardTableView({ columns, bottomClearance, onCardPress }: Props)
     >
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={Platform.OS !== 'web'}
+        showsHorizontalScrollIndicator={false}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.hScrollContent}
+        contentContainerStyle={[
+          styles.hScrollContent,
+          {
+            paddingLeft: TABLE_EDGE_PADDING_H + insets.left,
+            paddingRight: TABLE_EDGE_PADDING_H + insets.right,
+          },
+        ]}
       >
         <View style={[styles.tableWrapOuter, { minWidth: TABLE_MIN_WIDTH }]}>
           <View style={styles.tableShadow} pointerEvents="none" />
@@ -264,7 +273,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   hScrollContent: {
-    paddingHorizontal: Platform.OS === 'web' ? 24 : 16,
     paddingTop: 8,
     paddingBottom: 4,
   },
