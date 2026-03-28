@@ -40,6 +40,8 @@ const TRIPLE_ROW_HEIGHT = 44;
 
 /** Gap between pill and expand. */
 const ROW_GAP = 16;
+/** Pull fullscreen control slightly toward the pill (optical / layout tweak). */
+const EXPAND_SHIFT_LEFT = 3;
 const EXPAND_ORB_SIZE = 45;
 const PILL_TRACK_HEIGHT = TRIPLE_ROW_HEIGHT + TRIPLE_PILL_PADDING_V * 2;
 /** Explicit width so the bar shell matches pill + gap + orb. */
@@ -200,11 +202,13 @@ export function BoardGlassBottomBar({
           ) : (
             <View style={[styles.row, { left: rowLeft }]}>
               {strip}
-              <GlassRoundIconButton
-                icon="maximize-2"
-                accessibilityLabel="Expand"
-                onPress={onExpand}
-              />
+              <View style={styles.expandFallbackNudge}>
+                <GlassRoundIconButton
+                  icon="maximize-2"
+                  accessibilityLabel="Expand"
+                  onPress={onExpand}
+                />
+              </View>
             </View>
           )}
         </View>
@@ -255,6 +259,10 @@ const styles = StyleSheet.create({
   expandPressable: {
     opacity: 1,
     overflow: 'visible',
+    marginLeft: -EXPAND_SHIFT_LEFT,
+  },
+  expandFallbackNudge: {
+    marginLeft: -EXPAND_SHIFT_LEFT,
   },
   tripleGlass: {
     width: TRIPLE_PILL_WIDTH,
