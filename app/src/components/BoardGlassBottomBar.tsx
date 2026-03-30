@@ -324,7 +324,12 @@ const styles = StyleSheet.create({
     minWidth: TRIPLE_PILL_WIDTH,
     height: PILL_TRACK_HEIGHT,
     borderRadius: 26,
-    overflow: 'hidden',
+    overflow: 'visible',
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   tripleInner: {
     position: 'absolute',
