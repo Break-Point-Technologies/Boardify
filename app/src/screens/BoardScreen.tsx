@@ -68,7 +68,6 @@ const FOCUS_LIST_CAROUSEL_GAP = 12;
 
 const BOARD_STRIP_COL_STRIDE = BOARD_STRIP_COLUMN_WIDTH + 16;
 
-/** Exit: one smooth motion (anchors only; scale stays 1 — no zoom-out overshoot). */
 const FOCUS_ZOOM_EXIT_MS = 680;
 const FOCUS_EXIT_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 
@@ -259,11 +258,8 @@ export default function BoardScreen({
   const focusZoomAnchorY = useSharedValue(0);
   const focusExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusExitAnimatingRef = useRef(false);
-  /** Mirrors ref so the expand control can disable / show correct icon during exit (refs don’t re-render). */
   const [focusExitAnimationBusy, setFocusExitAnimationBusy] = useState(false);
-  /** Column index when opening focus from expand; layout effect snaps scroll + anchor before zoom runs. */
   const focusEnterColumnIdxRef = useRef<number | null>(null);
-  /** Exit zoom is scheduled on the next frame so it does not race same-frame cancellations. */
   const focusExitRafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -373,7 +369,6 @@ export default function BoardScreen({
             Math.max(0, Math.round(horizontalScrollXRef.current / snap))
           );
           const x = page * BOARD_STRIP_COL_STRIDE;
-          // Snap scroll without a second animation — exit zoom already panned the camera to this column.
           horizontalScrollRef.current?.scrollTo({ x, animated: false });
         }
       });
@@ -922,7 +917,6 @@ export default function BoardScreen({
   const focusColumnMaxH = Math.min(580, Math.round(screenH * 0.58));
   const focusCardScrollMax = Math.max(300, focusColumnMaxH - 130);
 
-  /** Snap horizontal scroll + zoom anchor to the focused carousel column before paint (strip vs carousel stride differ). */
   useLayoutEffect(() => {
     if (!boardFocusMode) return;
     const idx = focusEnterColumnIdxRef.current;
@@ -971,7 +965,7 @@ export default function BoardScreen({
     setBoardFocusMode(false);
   }, []);
 
-  const logExitTimingFinished = useCallback(
+  const onFocusExitTimingFinished = useCallback(
     (finished?: boolean) => {
       const ok = finished === true;
       if (ok) {
@@ -1022,18 +1016,11 @@ export default function BoardScreen({
     const anchorEndX = stripColumnCenterScreenX(sxBoard, padBoard, idx);
     const anchorEndY = screenH * 0.44;
 
-    // While exiting, move the horizontal scroll target immediately so adjacent
-    // columns are already on-screen during the zoom/shrink. We use animated: false
-    // to avoid fighting the camera pan/zoom interpolation.
-    // Important: while boardFocusMode is still true, the ScrollView uses focus-mode
-    // spacing (`focusCarousel.snapInterval`), not the default stride.
     horizontalScrollRef.current?.scrollTo({ x: sxFocus, animated: false });
     horizontalScrollXRef.current = sxFocus;
 
     focusExitAnimatingRef.current = true;
     setFocusExitAnimationBusy(true);
-    // Switch to default column width immediately.
-    // Since `BoardColumn` uses a layout transition, it should shrink smoothly.
     setBoardFocusMode(false);
     focusExitRafRef.current = requestAnimationFrame(() => {
       focusExitRafRef.current = null;
@@ -1053,12 +1040,10 @@ export default function BoardScreen({
       };
       focusZoomAnchorX.value = withTiming(anchorEndX, exitTiming);
       focusZoomAnchorY.value = withTiming(anchorEndY, exitTiming);
-      // Scale stays 1: a two-phase 1→zOut→1 read as “too far out then back.” Layout width change
-      // already conveys leaving full-screen. withDelay aligns completion with anchor duration.
       focusZoom.value = withDelay(
         FOCUS_ZOOM_EXIT_MS,
         withTiming(1, { duration: 0 }, (finished) => {
-          runOnJS(logExitTimingFinished)(finished);
+          runOnJS(onFocusExitTimingFinished)(finished);
         })
       );
     });
@@ -1076,12 +1061,11 @@ export default function BoardScreen({
     focusZoomAnchorY,
     finalizeFocusExit,
     completeFocusExitAfterAnimation,
-    logExitTimingFinished,
+    onFocusExitTimingFinished,
   ]);
 
   useEffect(() => {
     if (!boardFocusMode) {
-      // Exit full-screen: do not reset zoom while exit RAF / delayed completion runs.
       if (focusExitAnimatingRef.current) {
         return () => {
           if (focusExitRafRef.current != null) {
@@ -1110,9 +1094,6 @@ export default function BoardScreen({
         cancelAnimation(focusZoomAnchorY);
       };
     }
-    // Keep scale at 1 while focused. Animating from start<1 → 1 was fragile: if `withTiming` is
-    // cancelled (effect cleanup, Strict Mode, etc.), focusZoom can stay <1 and the board looks
-    // permanently “zoomed out.” Carousel column width + layout already sell the full-screen step.
     cancelAnimation(focusZoom);
     focusZoom.value = 1;
     return () => {

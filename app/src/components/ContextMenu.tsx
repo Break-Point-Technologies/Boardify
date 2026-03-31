@@ -34,7 +34,6 @@ if (Platform.OS === 'ios') {
     Section = swiftUI.Section;
     Host = swiftUI.Host;
     menuGlassModifiers = [buttonStyle('glass')];
-    // `plain` still leaves a label chrome; `borderless` minimizes the SwiftUI `Menu` label button.
     menuPlainLabelModifiers = [buttonStyle('borderless')];
   } catch (error) {
     console.warn('SwiftUI components not available');

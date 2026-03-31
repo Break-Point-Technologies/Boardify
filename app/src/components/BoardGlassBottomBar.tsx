@@ -10,7 +10,6 @@ import {
 } from 'expo-glass-effect';
 import { hapticLight } from '../utils/haptics';
 import { GlassRoundIconButton } from './GlassRoundIconButton';
-// import { ContextMenu } from './ContextMenu';
 
 const ICON_COLOR = '#0a0a0a';
 const ICON_SIZE = 22;
@@ -24,7 +23,6 @@ export type BoardGlassBottomBarProps = {
   onExpandPress?: () => void;
   showExpandButton?: boolean;
   expandActive?: boolean;
-  /** When true, expand/minimize control does not accept presses (e.g. exit animation in progress). */
   expandDisabled?: boolean;
   onLayoutMenuSelect?: (mode: BoardBottomBarLayoutMode) => void;
 };
