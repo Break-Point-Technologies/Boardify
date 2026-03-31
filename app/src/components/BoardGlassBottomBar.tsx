@@ -24,6 +24,8 @@ export type BoardGlassBottomBarProps = {
   onExpandPress?: () => void;
   showExpandButton?: boolean;
   expandActive?: boolean;
+  /** When true, expand/minimize control does not accept presses (e.g. exit animation in progress). */
+  expandDisabled?: boolean;
   onLayoutMenuSelect?: (mode: BoardBottomBarLayoutMode) => void;
 };
 
@@ -115,19 +117,33 @@ function GlassTripleStrip({ onFilterPress, onBellPress, onSettingsPress }: Glass
 function BoardExpandGlassPressable({
   onPress,
   active,
+  disabled,
 }: {
   onPress: () => void;
   active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       collapsable={false}
       onPress={onPress}
+      disabled={disabled}
       hitSlop={10}
       accessibilityRole="button"
-      accessibilityLabel={active ? 'Exit focused list view' : 'Focus one list at a time'}
+      accessibilityState={{ disabled: !!disabled }}
+      accessibilityLabel={
+        disabled
+          ? 'Finishing transition'
+          : active
+            ? 'Exit focused list view'
+            : 'Focus one list at a time'
+      }
       android_ripple={null}
-      style={styles.expandPressable}
+      style={({ pressed }) => [
+        styles.expandPressable,
+        disabled && styles.expandPressableDisabled,
+        pressed && !disabled && styles.expandPressablePressed,
+      ]}
     >
       <GlassView
         isInteractive
@@ -151,6 +167,7 @@ export function BoardGlassBottomBar({
   onLayoutMenuSelect,
   showExpandButton = true,
   expandActive = false,
+  expandDisabled = false,
 }: BoardGlassBottomBarProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -210,7 +227,11 @@ export function BoardGlassBottomBar({
               >
                 {strip}
                 {showExpandButton ? (
-                  <BoardExpandGlassPressable onPress={onExpand} active={expandActive} />
+                  <BoardExpandGlassPressable
+                    onPress={onExpand}
+                    active={expandActive}
+                    disabled={expandDisabled}
+                  />
                 ) : null}
               </GlassContainer>
             ) : (
@@ -227,7 +248,14 @@ export function BoardGlassBottomBar({
                     <View style={styles.expandFallbackNudge}>
                       <GlassRoundIconButton
                         icon={expandActive ? 'minimize-2' : 'maximize-2'}
-                        accessibilityLabel={expandActive ? 'Exit focused list view' : 'Focus one list at a time'}
+                        accessibilityLabel={
+                          expandDisabled
+                            ? 'Finishing transition'
+                            : expandActive
+                              ? 'Exit focused list view'
+                              : 'Focus one list at a time'
+                        }
+                        disabled={expandDisabled}
                         onPress={onExpand}
                       />
                     </View>
@@ -315,6 +343,12 @@ const styles = StyleSheet.create({
     opacity: 1,
     overflow: 'visible',
     marginLeft: -EXPAND_SHIFT_LEFT,
+  },
+  expandPressableDisabled: {
+    opacity: 0.5,
+  },
+  expandPressablePressed: {
+    opacity: 0.92,
   },
   expandFallbackNudge: {
     marginLeft: -EXPAND_SHIFT_LEFT,

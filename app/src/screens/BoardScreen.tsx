@@ -23,7 +23,7 @@ import Animated, {
   useSharedValue,
   cancelAnimation,
   withTiming,
-  withSequence,
+  withDelay,
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
@@ -68,51 +68,9 @@ const FOCUS_LIST_CAROUSEL_GAP = 12;
 
 const BOARD_STRIP_COL_STRIDE = BOARD_STRIP_COLUMN_WIDTH + 16;
 
-/** Exit uses a slightly longer ease-out so the “camera” settles on the board column like normal view. */
-const FOCUS_ZOOM_EXIT_MS = 620;
-const FOCUS_ZOOM_EASING = Easing.inOut(Easing.quad);
-const FOCUS_ZOOM_OUT_EASING = Easing.out(Easing.cubic);
-/** Scale at start of enter: board column width → focused card width. Capped at 1 so we always zoom in, not out. */
-function focusZoomEnterStartScale(cardWidth: number): number {
-  const ratio = BOARD_STRIP_COLUMN_WIDTH / cardWidth;
-  return Math.min(1, Math.max(0.72, ratio));
-}
-
-/** Exit zoom target: same physics as enter. If too close to 1, use a visible zoom-out so exit always animates. */
-function focusExitZoomTarget(cardWidth: number): number {
-  const z = focusZoomEnterStartScale(cardWidth);
-  if (Math.abs(z - 1) < 0.06) {
-    return 0.88;
-  }
-  return z;
-}
-
-/**
- * Stage-1 scale target for exit.
- * The raw physics target can zoom out too far (hides adjacent lists).
- * Clamp it closer to 1 so adjacent columns remain visible while still feeling like a camera zoom-out.
- */
-function focusExitGentleZoomOutTarget(cardWidth: number): number {
-  const z = focusExitZoomTarget(cardWidth);
-  const blended = z + (1 - z) * 0.5;
-  // Keep at least ~0.86 so adjacent columns remain visible, without zooming out too far.
-  return Math.max(0.8, Math.min(1, blended));
-}
-
-/**
- * Scale at end of exit `withTiming` (before layout returns to default). Raw physics (280/cardWidth)
- * zooms out too far for this shell transform; blend halfway toward 1 and floor so the motion stays
- * gentle while still reading as a zoom-out before the layout swap.
- */
-function focusExitAnimationEndScale(cardWidth: number): number {
-  const z = focusExitZoomTarget(cardWidth);
-  const blended = z + (1 - z) * 0.5;
-  // Default (non-focus) layout expects `focusZoom` to be `1`.
-  // If we finish exit at < 1, the `boardFocusMode` false effect forces it to 1,
-  // producing a visible “pop” at the end.
-  // Width/margin shrinking already provides the zoom-out feel.
-  return 1;
-}
+/** Exit: one smooth motion (anchors only; scale stays 1 — no zoom-out overshoot). */
+const FOCUS_ZOOM_EXIT_MS = 680;
+const FOCUS_EXIT_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 
 function stripColumnCenterScreenX(scrollX: number, pad: number, idx: number): number {
   return pad + idx * BOARD_STRIP_COL_STRIDE + BOARD_STRIP_COLUMN_WIDTH / 2 - scrollX;
@@ -301,6 +259,8 @@ export default function BoardScreen({
   const focusZoomAnchorY = useSharedValue(0);
   const focusExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusExitAnimatingRef = useRef(false);
+  /** Mirrors ref so the expand control can disable / show correct icon during exit (refs don’t re-render). */
+  const [focusExitAnimationBusy, setFocusExitAnimationBusy] = useState(false);
   /** Column index when opening focus from expand; layout effect snaps scroll + anchor before zoom runs. */
   const focusEnterColumnIdxRef = useRef<number | null>(null);
   /** Exit zoom is scheduled on the next frame so it does not race same-frame cancellations. */
@@ -321,6 +281,7 @@ export default function BoardScreen({
         focusExitTimerRef.current = null;
       }
       focusExitAnimatingRef.current = false;
+      setFocusExitAnimationBusy(false);
       cancelAnimation(focusZoom);
       focusZoom.value = 1;
       setBoardFocusMode(false);
@@ -996,6 +957,7 @@ export default function BoardScreen({
       focusExitTimerRef.current = null;
     }
     focusExitAnimatingRef.current = false;
+    setFocusExitAnimationBusy(false);
     cancelAnimation(focusZoom);
     cancelAnimation(focusZoomAnchorX);
     cancelAnimation(focusZoomAnchorY);
@@ -1005,6 +967,7 @@ export default function BoardScreen({
 
   const completeFocusExitAfterAnimation = useCallback(() => {
     focusExitAnimatingRef.current = false;
+    setFocusExitAnimationBusy(false);
     setBoardFocusMode(false);
   }, []);
 
@@ -1014,7 +977,6 @@ export default function BoardScreen({
       if (ok) {
         completeFocusExitAfterAnimation();
       } else {
-        // Animation was cancelled; still leave focus mode so one tap works (ref was stuck true → second tap used finalizeFocusExit).
         finalizeFocusExit();
       }
     },
@@ -1030,6 +992,7 @@ export default function BoardScreen({
         focusExitTimerRef.current = null;
       }
       focusExitAnimatingRef.current = false;
+      setFocusExitAnimationBusy(false);
       const sx = horizontalScrollXRef.current;
       const maxIdx = Math.max(0, columns.length - 1);
       const idx = Math.min(maxIdx, Math.max(0, Math.round(sx / BOARD_STRIP_COL_STRIDE)));
@@ -1040,15 +1003,12 @@ export default function BoardScreen({
     }
 
     if (focusExitAnimatingRef.current) {
-      finalizeFocusExit();
       return;
     }
 
     const sx = horizontalScrollXRef.current;
     const snap = focusCarousel.snapInterval;
     const idx = Math.min(columns.length, Math.max(0, Math.round(sx / snap)));
-    const zOut = focusExitGentleZoomOutTarget(focusCarousel.cardWidth);
-    const zExitEnd = focusExitAnimationEndScale(focusCarousel.cardWidth);
     if (focusExitRafRef.current != null) {
       cancelAnimationFrame(focusExitRafRef.current);
       focusExitRafRef.current = null;
@@ -1071,6 +1031,7 @@ export default function BoardScreen({
     horizontalScrollXRef.current = sxFocus;
 
     focusExitAnimatingRef.current = true;
+    setFocusExitAnimationBusy(true);
     // Switch to default column width immediately.
     // Since `BoardColumn` uses a layout transition, it should shrink smoothly.
     setBoardFocusMode(false);
@@ -1088,16 +1049,15 @@ export default function BoardScreen({
       focusZoom.value = 1;
       const exitTiming = {
         duration: FOCUS_ZOOM_EXIT_MS,
-        easing: FOCUS_ZOOM_OUT_EASING,
+        easing: FOCUS_EXIT_EASING,
       };
       focusZoomAnchorX.value = withTiming(anchorEndX, exitTiming);
       focusZoomAnchorY.value = withTiming(anchorEndY, exitTiming);
-      // Smooth “camera” zoom-out + settle to the non-focus scale.
-      const zoomOutMs = Math.round(FOCUS_ZOOM_EXIT_MS * 0.65);
-      const settleMs = Math.max(1, FOCUS_ZOOM_EXIT_MS - zoomOutMs);
-      focusZoom.value = withSequence(
-        withTiming(zOut, { duration: zoomOutMs, easing: FOCUS_ZOOM_OUT_EASING }),
-        withTiming(zExitEnd, { duration: settleMs, easing: FOCUS_ZOOM_EASING }, (finished) => {
+      // Scale stays 1: a two-phase 1→zOut→1 read as “too far out then back.” Layout width change
+      // already conveys leaving full-screen. withDelay aligns completion with anchor duration.
+      focusZoom.value = withDelay(
+        FOCUS_ZOOM_EXIT_MS,
+        withTiming(1, { duration: 0 }, (finished) => {
           runOnJS(logExitTimingFinished)(finished);
         })
       );
@@ -1121,7 +1081,7 @@ export default function BoardScreen({
 
   useEffect(() => {
     if (!boardFocusMode) {
-      // Exit full-screen: do not reset zoom while exit RAF / withSequence runs.
+      // Exit full-screen: do not reset zoom while exit RAF / delayed completion runs.
       if (focusExitAnimatingRef.current) {
         return () => {
           if (focusExitRafRef.current != null) {
@@ -1133,6 +1093,7 @@ export default function BoardScreen({
           cancelAnimation(focusZoomAnchorY);
           focusZoom.value = 1;
           focusExitAnimatingRef.current = false;
+          setFocusExitAnimationBusy(false);
         };
       }
       if (focusExitRafRef.current != null) {
@@ -1178,7 +1139,7 @@ export default function BoardScreen({
   );
 
   const boardGlassBottomBarProps = useMemo((): BoardGlassBottomBarProps => {
-    return {
+    const props: BoardGlassBottomBarProps = {
       ...glassBottomBar,
       onLayoutMenuSelect: (mode) => {
         const view: BoardViewMode =
@@ -1187,10 +1148,19 @@ export default function BoardScreen({
         onBoardViewSelect?.(view);
       },
       showExpandButton: viewMode === 'board',
-      expandActive: boardFocusMode,
+      expandActive: boardFocusMode || focusExitAnimationBusy,
+      expandDisabled: focusExitAnimationBusy,
       onExpandPress: handleBoardFocusExpandPress,
     };
-  }, [boardFocusMode, glassBottomBar, handleBoardFocusExpandPress, onBoardViewSelect, viewMode]);
+    return props;
+  }, [
+    boardFocusMode,
+    focusExitAnimationBusy,
+    glassBottomBar,
+    handleBoardFocusExpandPress,
+    onBoardViewSelect,
+    viewMode,
+  ]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
