@@ -35,6 +35,7 @@ import { BoardColumn } from '../components/BoardColumn';
 import { BoardColumnPlaceholder } from '../components/BoardColumnPlaceholder';
 import { BoardTableView, type TableRowDragState } from '../components/BoardTableView';
 import { BoardCalendarView } from '../components/BoardCalendarView';
+import { BoardTimelineView } from '../components/BoardTimelineView';
 import { BoardDashboardView } from '../components/dashboard/BoardDashboardView';
 import { PromptModal } from '../components/PromptModal';
 import {
@@ -149,7 +150,9 @@ const INITIAL_COLUMNS: BoardColumnData[] = [
         createdAtIso: daysAgoIso(1),
         subtitle: 'You',
         labelColor: '#a5d6a5',
+        startDate: new Date(Date.now() - 8 * 86400000).toISOString(),
         dueDate: new Date(Date.now() + 10 * 86400000).toISOString(),
+        assignees: [{ id: 'm-2', name: 'Sam Lee', initials: 'SL' }],
       },
       {
         id: 'c-1-1',
@@ -1404,6 +1407,14 @@ export default function BoardScreen({
           bottomClearance={BOARD_GLASS_BOTTOM_BAR_CLEARANCE}
           onRemoveTile={handleDashboardRemoveTile}
         />
+      ) : viewMode === 'timeline' ? (
+        <View style={styles.boardArea}>
+          <BoardTimelineView
+            columns={columns}
+            bottomClearance={BOARD_GLASS_BOTTOM_BAR_CLEARANCE}
+            onOpenTask={handleCalendarOpenTask}
+          />
+        </View>
       ) : (
         <View style={styles.viewPlaceholder}>
           <Text style={styles.viewPlaceholderTitle}>
