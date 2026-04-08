@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Platform,
   Dimensions,
@@ -28,6 +29,9 @@ import Animated, {
   withDelay,
   Easing,
   runOnJS,
+  LinearTransition,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -68,6 +72,8 @@ export type { BoardViewMode } from '../types/board';
 
 const SHIFT = 5;
 
+const ADD_LIST_MORPH_LAYOUT = LinearTransition.duration(280).easing(Easing.out(Easing.cubic));
+
 const BOARD_STRIP_COLUMN_WIDTH = 280;
 
 const FOCUS_LIST_CARD_WIDTH_RATIO = 0.86;
@@ -79,6 +85,8 @@ const FOCUS_ZOOM_EXIT_MS = 680;
 const FOCUS_EXIT_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 
 const BOARD_HEADER_ROW_HEIGHT = 69;
+
+function boardGlassBarNoopAction() {}
 
 function stripColumnCenterScreenX(scrollX: number, pad: number, idx: number): number {
   return pad + idx * BOARD_STRIP_COL_STRIDE + BOARD_STRIP_COLUMN_WIDTH / 2 - scrollX;
@@ -223,7 +231,8 @@ interface BoardScreenProps {
   onBoardViewSelect?: (mode: BoardViewMode) => void;
   onOpenBoardSettings?: () => void;
   onOpenBoardNotifications?: () => void;
-  glassBottomBar?: BoardGlassBottomBarProps;
+  /** Optional overrides merged into the built-in bar props (search/bell/settings always receive real handlers). */
+  glassBottomBar?: Partial<BoardGlassBottomBarProps>;
 }
 
 export default function BoardScreen({
@@ -292,6 +301,8 @@ export default function BoardScreen({
   const lastAbsRef = useRef({ x: 0, y: 0 });
   type GHScrollViewRef = React.ElementRef<typeof GHScrollView>;
   const horizontalScrollRef = useRef<GHScrollViewRef | null>(null);
+  const pendingTableAddListRef = useRef(false);
+  const inlineAddListInputRef = useRef<TextInput | null>(null);
   const focusZoom = useSharedValue(1);
   const focusZoomAnchorX = useSharedValue(0);
   const focusZoomAnchorY = useSharedValue(0);
@@ -451,7 +462,8 @@ export default function BoardScreen({
 
   const [tableRowDragging, setTableRowDragging] = useState<TableRowDragState | null>(null);
   const [promptAddCardCol, setPromptAddCardCol] = useState<number | null>(null);
-  const [promptAddList, setPromptAddList] = useState(false);
+  const [inlineAddListOpen, setInlineAddListOpen] = useState(false);
+  const [inlineAddListDraft, setInlineAddListDraft] = useState('');
   const [dashboardTiles, setDashboardTiles] = useState<DashboardTile[]>(() => [
     { id: uid('dash'), kind: 'bar', dimension: 'list' },
     { id: uid('dash'), kind: 'bar', dimension: 'due' },
@@ -502,6 +514,47 @@ export default function BoardScreen({
     closeAddCardComposer();
   }, [addCardComposerDraft, addCardComposerCol, closeAddCardComposer]);
 
+  const openInlineAddList = useCallback(() => {
+    setInlineAddListOpen(true);
+    setInlineAddListDraft('');
+    setTimeout(() => inlineAddListInputRef.current?.focus(), 100);
+  }, []);
+
+  const cancelInlineAddList = useCallback(() => {
+    hapticLight();
+    Keyboard.dismiss();
+    setInlineAddListOpen(false);
+    setInlineAddListDraft('');
+  }, []);
+
+  const commitInlineAddList = useCallback(() => {
+    const title = inlineAddListDraft.trim();
+    if (!title) return;
+    hapticLight();
+    Keyboard.dismiss();
+    setColumns((prev) => [...prev, { id: uid('col'), title, cards: [] }]);
+    setInlineAddListOpen(false);
+    setInlineAddListDraft('');
+    setTimeout(() => {
+      horizontalScrollRef.current?.scrollToEnd({ animated: true });
+    }, 300);
+  }, [inlineAddListDraft]);
+
+  useEffect(() => {
+    if (viewMode !== 'board' || !pendingTableAddListRef.current) return;
+    pendingTableAddListRef.current = false;
+    const id = setTimeout(() => openInlineAddList(), 80);
+    return () => clearTimeout(id);
+  }, [viewMode, openInlineAddList]);
+
+  useEffect(() => {
+    if (viewMode !== 'board' && inlineAddListOpen) {
+      setInlineAddListOpen(false);
+      setInlineAddListDraft('');
+      Keyboard.dismiss();
+    }
+  }, [viewMode, inlineAddListOpen]);
+
   useEffect(() => {
     if (expanded != null) closeAddCardComposer();
   }, [expanded, closeAddCardComposer]);
@@ -513,6 +566,22 @@ export default function BoardScreen({
   useEffect(() => {
     if (listDragging != null) closeAddCardComposer();
   }, [listDragging, closeAddCardComposer]);
+
+  useEffect(() => {
+    if (expanded != null && inlineAddListOpen) {
+      setInlineAddListOpen(false);
+      setInlineAddListDraft('');
+      Keyboard.dismiss();
+    }
+  }, [expanded, inlineAddListOpen]);
+
+  useEffect(() => {
+    if ((dragging != null || listDragging != null) && inlineAddListOpen) {
+      setInlineAddListOpen(false);
+      setInlineAddListDraft('');
+      Keyboard.dismiss();
+    }
+  }, [dragging, listDragging, inlineAddListOpen]);
 
   const [cardSearchOpen, setCardSearchOpen] = useState(false);
   const [cardSearchQuery, setCardSearchQuery] = useState('');
@@ -735,10 +804,6 @@ export default function BoardScreen({
     },
     [promptAddCardCol]
   );
-
-  const handleAddListSubmit = useCallback((title: string) => {
-    setColumns((prev) => [...prev, { id: uid('col'), title, cards: [] }]);
-  }, []);
 
   const handleTableToggleStopwatch = useCallback((cardId: string) => {
     hapticLight();
@@ -1277,7 +1342,7 @@ export default function BoardScreen({
   );
 
   const boardGlassBottomBarProps = useMemo((): BoardGlassBottomBarProps => {
-    const props: BoardGlassBottomBarProps = {
+    return {
       ...glassBottomBar,
       onLayoutMenuSelect: (mode) => {
         const view: BoardViewMode =
@@ -1285,15 +1350,16 @@ export default function BoardScreen({
         setViewMode(view);
         onBoardViewSelect?.(view);
       },
-      onSettingsPress: onOpenBoardSettings ?? glassBottomBar?.onSettingsPress,
-      onBellPress: onOpenBoardNotifications ?? glassBottomBar?.onBellPress,
+      /** Screen routes win over `glassBottomBar` for bell/settings; search defaults to `openCardSearch`. */
       onSearchCardsPress: glassBottomBar?.onSearchCardsPress ?? openCardSearch,
+      onBellPress: onOpenBoardNotifications ?? glassBottomBar?.onBellPress ?? boardGlassBarNoopAction,
+      onSettingsPress:
+        onOpenBoardSettings ?? glassBottomBar?.onSettingsPress ?? boardGlassBarNoopAction,
       showExpandButton: viewMode === 'board',
       expandActive: boardFocusMode || focusExitAnimationBusy,
       expandDisabled: focusExitAnimationBusy,
       onExpandPress: handleBoardFocusExpandPress,
     };
-    return props;
   }, [
     boardFocusMode,
     focusExitAnimationBusy,
@@ -1560,21 +1626,95 @@ export default function BoardScreen({
               boardFocusMode && { width: focusCarousel.cardWidth, marginRight: 0 },
             ]}
           >
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => hapticLight()}
+            <Animated.View
+              layout={ADD_LIST_MORPH_LAYOUT}
               style={[
                 styles.addListWrap,
                 boardFocusMode && { width: focusCarousel.cardWidth },
                 boardFocusMode && styles.addListWrapCentered,
               ]}
             >
-              <View style={styles.addListShadow} />
-              <View style={styles.addList}>
-                <Feather name="plus" size={20} color="#666" />
-                <Text style={styles.addListText}>Add list</Text>
-              </View>
-            </TouchableOpacity>
+              {!inlineAddListOpen ? (
+                <Animated.View exiting={FadeOut.duration(140)}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      hapticLight();
+                      openInlineAddList();
+                    }}
+                    style={styles.addListTouchableFill}
+                  >
+                    <View style={styles.addListShadow} />
+                    <View style={styles.addList}>
+                      <Feather name="plus" size={20} color="#666" />
+                      <Text style={styles.addListText}>Add list</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              ) : (
+                <Animated.View entering={FadeIn.duration(200)}>
+                  <View style={styles.addListShadow} />
+                  <View
+                    style={[
+                      styles.inlineNewListColumn,
+                      boardFocusMode && { maxHeight: focusColumnMaxH },
+                    ]}
+                  >
+                    <View style={styles.inlineNewListHeader}>
+                      <TextInput
+                        ref={inlineAddListInputRef}
+                        value={inlineAddListDraft}
+                        onChangeText={setInlineAddListDraft}
+                        placeholder="List name"
+                        placeholderTextColor="#888"
+                        style={styles.inlineNewListTitleInput}
+                        autoCorrect
+                        autoCapitalize="sentences"
+                        returnKeyType="done"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => {
+                          if (inlineAddListDraft.trim()) commitInlineAddList();
+                        }}
+                        maxLength={120}
+                      />
+                      <Text style={styles.inlineNewListCount}>0</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.inlineNewListBody,
+                        boardFocusMode && { maxHeight: focusCardScrollMax },
+                      ]}
+                    >
+                      <Text style={styles.inlineNewListHint}>Cards will show up here</Text>
+                    </View>
+                    <View style={styles.inlineNewListActions}>
+                      <Pressable
+                        onPress={cancelInlineAddList}
+                        hitSlop={8}
+                        style={styles.inlineNewListActionHit}
+                      >
+                        <Text style={styles.inlineNewListActionCancel}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={commitInlineAddList}
+                        hitSlop={8}
+                        style={styles.inlineNewListActionHit}
+                        disabled={!inlineAddListDraft.trim()}
+                      >
+                        <Text
+                          style={[
+                            styles.inlineNewListActionAdd,
+                            !inlineAddListDraft.trim() && styles.inlineNewListActionAddDisabled,
+                          ]}
+                        >
+                          Add list
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
           </View>
         </GHScrollView>
           </Animated.View>
@@ -1597,7 +1737,12 @@ export default function BoardScreen({
           onToggleTableStopwatch={handleTableToggleStopwatch}
           onMoveCardToColumn={handleTableMoveCardToColumn}
           onAddCard={(colIdx) => setPromptAddCardCol(colIdx)}
-          onAddList={() => setPromptAddList(true)}
+          onAddList={() => {
+            hapticLight();
+            pendingTableAddListRef.current = true;
+            setViewMode('board');
+            onBoardViewSelect?.('board');
+          }}
           onReorderList={handleTableReorderList}
           onTableRowDrop={handleTableRowDrop}
           tableRowDragging={tableRowDragging}
@@ -1739,15 +1884,6 @@ export default function BoardScreen({
         onCancel={() => setPromptAddCardCol(null)}
         onSubmit={handleAddCardSubmit}
       />
-      <PromptModal
-        visible={promptAddList}
-        title="New list"
-        placeholder="List name"
-        confirmLabel="Add list"
-        onCancel={() => setPromptAddList(false)}
-        onSubmit={handleAddListSubmit}
-      />
-
       {expanded && expandedCardResolved ? (
         <BoardCardExpandOverlay
           layoutInfo={expanded}
@@ -1914,6 +2050,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginLeft: 0,
   },
+  addListTouchableFill: {
+    alignSelf: 'stretch',
+  },
   addListShadow: {
     position: 'absolute',
     left: SHIFT,
@@ -1944,6 +2083,81 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#666',
+  },
+  inlineNewListColumn: {
+    position: 'relative',
+    zIndex: 1,
+    backgroundColor: '#e8e8e8',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#000',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    minHeight: 360,
+    maxHeight: 520,
+  },
+  inlineNewListHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  inlineNewListTitleInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0a0a0a',
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  inlineNewListCount: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  inlineNewListBody: {
+    minHeight: 220,
+    maxHeight: 400,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  inlineNewListHint: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+  },
+  inlineNewListActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginTop: 12,
+  },
+  inlineNewListActionHit: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  inlineNewListActionCancel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0c66e4',
+  },
+  inlineNewListActionAdd: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0a0a0a',
+  },
+  inlineNewListActionAddDisabled: {
+    color: '#aaa',
   },
   viewPlaceholder: {
     flex: 1,

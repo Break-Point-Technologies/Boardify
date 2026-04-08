@@ -18,9 +18,9 @@ export type BoardBottomBarLayoutMode = 'board' | 'list' | 'calendar';
 
 export type BoardGlassBottomBarProps = {
   /** Opens card search / filter in the board header (magnifying glass, left of notifications). */
-  onSearchCardsPress?: () => void;
-  onBellPress?: () => void;
-  onSettingsPress?: () => void;
+  onSearchCardsPress: () => void;
+  onBellPress: () => void;
+  onSettingsPress: () => void;
   onExpandPress?: () => void;
   showExpandButton?: boolean;
   expandActive?: boolean;
@@ -177,7 +177,6 @@ export function BoardGlassBottomBar({
 }: BoardGlassBottomBarProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const noop = () => {};
   const useNativeGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 
   const rowTotalWidth = showExpandButton ? ROW_TOTAL_WIDTH_WITH_EXPAND : ROW_TOTAL_WIDTH_PILL_ONLY;
@@ -194,22 +193,22 @@ export function BoardGlassBottomBar({
     <GlassIconStrip
       onSearchCardsPress={() => {
         hapticLight();
-        (onSearchCardsPress ?? noop)();
+        onSearchCardsPress();
       }}
       onBellPress={() => {
         hapticLight();
-        (onBellPress ?? noop)();
+        onBellPress();
       }}
       onSettingsPress={() => {
         hapticLight();
-        (onSettingsPress ?? noop)();
+        onSettingsPress();
       }}
     />
   );
 
   const onExpand = () => {
     hapticLight();
-    (onExpandPress ?? noop)();
+    onExpandPress?.();
   };
 
   return (
