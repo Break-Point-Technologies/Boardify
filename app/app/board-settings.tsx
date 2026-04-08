@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   choiceRowToggle: {
     width: 32,
     height: 32,
-    borderRadius: 9,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: '#c4c4c4',
     backgroundColor: '#fff',
