@@ -29,7 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { hapticLight } from '../utils/haptics';
+import { hapticLight, hapticMedium } from '../utils/haptics';
 import { consumePendingDashboardAddTile } from '../utils/dashboardAddTileNavigation';
 import { BoardColumn } from '../components/BoardColumn';
 import { BoardColumnPlaceholder } from '../components/BoardColumnPlaceholder';
@@ -56,6 +56,7 @@ import {
   computeColumnHoverInsertIndex,
   computeHoverInsertIndex,
   moveCardToHover,
+  removeCardFromBoard,
   reorderColumns,
 } from '../board/boardDragUtils';
 import { uid } from '../utils/id';
@@ -74,6 +75,9 @@ const BOARD_STRIP_COL_STRIDE = BOARD_STRIP_COLUMN_WIDTH + 16;
 
 const FOCUS_ZOOM_EXIT_MS = 680;
 const FOCUS_EXIT_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
+
+/** Height below status bar for “drop to archive” (window Y). */
+const ARCHIVE_DROP_ZONE_HEIGHT = 82;
 
 function stripColumnCenterScreenX(scrollX: number, pad: number, idx: number): number {
   return pad + idx * BOARD_STRIP_COL_STRIDE + BOARD_STRIP_COLUMN_WIDTH / 2 - scrollX;
@@ -334,11 +338,17 @@ export default function BoardScreen({
   const listDraggingRef = useRef<ListDraggingState | null>(null);
   const listHoverInsertRef = useRef<number | null>(null);
   const columnWrapLayoutsRef = useRef<Array<{ x: number; width: number } | null>>([]);
+  const dragOverArchiveRef = useRef(false);
+  const dragOverArchivePrevRef = useRef(false);
+  const [dragOverArchive, setDragOverArchive] = useState(false);
 
   const flushHoverRaf = useCallback(() => {
     hoverRafRef.current = null;
     const n = pendingHoverRef.current;
-    if (n == null) return;
+    if (n == null) {
+      setHoverTarget((prev) => (prev != null ? null : prev));
+      return;
+    }
     setHoverTarget((prev) => {
       if (prev != null && prev.col === n.col && prev.insertIndex === n.insertIndex) {
         return prev;
@@ -760,13 +770,24 @@ export default function BoardScreen({
   const onDragMove = useCallback(
     (absX: number, absY: number) => {
       lastAbsRef.current = { x: absX, y: absY };
+      const overArchive = absY <= insets.top + ARCHIVE_DROP_ZONE_HEIGHT;
+      dragOverArchiveRef.current = overArchive;
+      if (overArchive !== dragOverArchivePrevRef.current) {
+        dragOverArchivePrevRef.current = overArchive;
+        setDragOverArchive(overArchive);
+      }
+      if (overArchive) {
+        pendingHoverRef.current = null;
+        scheduleHoverFlush();
+        return;
+      }
       const next = computeHover(absX, absY);
       if (next != null) {
         pendingHoverRef.current = next;
         scheduleHoverFlush();
       }
     },
-    [computeHover, scheduleHoverFlush]
+    [insets.top, computeHover, scheduleHoverFlush]
   );
 
   const onDragBegin = useCallback(
@@ -789,6 +810,9 @@ export default function BoardScreen({
         draggingRef.current = next;
         setDragging(next);
         setHoverTarget({ col: args.columnIndex, insertIndex: args.cardIndex });
+        dragOverArchiveRef.current = false;
+        dragOverArchivePrevRef.current = false;
+        setDragOverArchive(false);
       });
     },
     []
@@ -802,7 +826,14 @@ export default function BoardScreen({
     pendingHoverRef.current = null;
     const d = draggingRef.current;
     const h = hoverRef.current;
-    if (d && h) {
+    const overArchive = dragOverArchiveRef.current;
+    dragOverArchiveRef.current = false;
+    dragOverArchivePrevRef.current = false;
+    setDragOverArchive(false);
+    if (d && overArchive) {
+      void hapticMedium();
+      setColumns((prev) => removeCardFromBoard(prev, d.cardId));
+    } else if (d && h) {
       setColumns((prev) => moveCardToHover(prev, d.cardId, d.fromCol, h.col, h.insertIndex));
     }
     draggingRef.current = null;
@@ -1455,8 +1486,36 @@ export default function BoardScreen({
         </View>
       )}
 
+      {viewMode === 'board' && dragging ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.archiveDropStrip,
+            {
+              height: insets.top + ARCHIVE_DROP_ZONE_HEIGHT,
+              paddingTop: insets.top,
+              backgroundColor: dragOverArchive
+                ? 'rgba(180, 40, 40, 0.42)'
+                : 'rgba(0, 0, 0, 0.48)',
+              borderBottomColor: dragOverArchive
+                ? 'rgba(255, 255, 255, 0.95)'
+                : 'rgba(255, 255, 255, 0.22)',
+              borderBottomWidth: dragOverArchive ? 2 : StyleSheet.hairlineWidth,
+            },
+          ]}
+        >
+          <Feather
+            name="archive"
+            size={24}
+            color="#fff"
+            style={{ opacity: 0.95 }}
+          />
+          <Text style={styles.archiveDropStripText}>Drop here to archive</Text>
+        </View>
+      ) : null}
+
       {viewMode === 'board' && dragging && draggingCard ? (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <View pointerEvents="none" style={styles.cardDragOverlayRoot}>
           <Animated.View
             style={[
               {
@@ -1464,8 +1523,8 @@ export default function BoardScreen({
                 left: dragging.startX,
                 top: dragging.startY,
                 width: dragging.width,
-                zIndex: 10000,
-                elevation: 28,
+                zIndex: 1,
+                elevation: 24,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 12 },
                 shadowOpacity: 0.25,
@@ -1581,6 +1640,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f0e8',
     overflow: 'visible',
+  },
+  archiveDropStrip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    /** Below flying card overlay; above header (20) and board content. */
+    zIndex: 21000,
+    elevation: 21,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+  },
+  /** Wrapper must set z-index: RN only compares siblings; inner View z-index does not beat header/archive. */
+  cardDragOverlayRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 22000,
+    elevation: 22,
+  },
+  archiveDropStripText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
   },
   header: {
     flexDirection: 'row',

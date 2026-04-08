@@ -2,6 +2,17 @@ import type { BoardColumnData } from '../types/board';
 
 export const BOARD_CARD_ROW_HEIGHT = 88;
 
+/** Removes a card from whichever list contains it (for archive / delete). */
+export function removeCardFromBoard(
+  columns: BoardColumnData[],
+  cardId: string
+): BoardColumnData[] {
+  return columns.map((col) => ({
+    ...col,
+    cards: col.cards.filter((c) => c.id !== cardId),
+  }));
+}
+
 export function moveCardToHover(
   columns: BoardColumnData[],
   cardId: string,
