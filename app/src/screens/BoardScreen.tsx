@@ -76,8 +76,11 @@ const BOARD_STRIP_COL_STRIDE = BOARD_STRIP_COLUMN_WIDTH + 16;
 const FOCUS_ZOOM_EXIT_MS = 680;
 const FOCUS_EXIT_EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 
-/** Height below status bar for “drop to archive” (window Y). */
-const ARCHIVE_DROP_ZONE_HEIGHT = 82;
+/**
+ * In-flow archive header row height (matches normal header padding + controls).
+ * Used with safe-area top for window Y hit-testing: archive while absY < insets.top + this.
+ */
+const BOARD_ARCHIVE_HEADER_ROW_HEIGHT = 68;
 
 function stripColumnCenterScreenX(scrollX: number, pad: number, idx: number): number {
   return pad + idx * BOARD_STRIP_COL_STRIDE + BOARD_STRIP_COLUMN_WIDTH / 2 - scrollX;
@@ -770,7 +773,7 @@ export default function BoardScreen({
   const onDragMove = useCallback(
     (absX: number, absY: number) => {
       lastAbsRef.current = { x: absX, y: absY };
-      const overArchive = absY <= insets.top + ARCHIVE_DROP_ZONE_HEIGHT;
+      const overArchive = absY <= insets.top + BOARD_ARCHIVE_HEADER_ROW_HEIGHT;
       dragOverArchiveRef.current = overArchive;
       if (overArchive !== dragOverArchivePrevRef.current) {
         dragOverArchivePrevRef.current = overArchive;
@@ -1210,42 +1213,55 @@ export default function BoardScreen({
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <View style={styles.headerSide}>
-          {onBack ? (
-            <GlassRoundIconButton
-              icon="arrow-left"
-              size={22}
-              accessibilityLabel="Go back"
-              onPress={() => {
-                hapticLight();
-                onBack();
-              }}
-            />
-          ) : (
-            <View style={styles.headerSideSpacer} />
-          )}
+      {viewMode === 'board' && dragging ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.archiveHeaderReplacement,
+            dragOverArchive && styles.archiveHeaderReplacementActive,
+          ]}
+        >
+          <Feather name="archive" size={24} color="#fff" style={{ opacity: 0.95 }} />
+          <Text style={styles.archiveHeaderReplacementText}>Drop here to archive</Text>
         </View>
-        <Text style={styles.title} numberOfLines={1}>
-          {displayBoardTitle}
-        </Text>
-        <View style={[styles.headerSide, styles.headerSideEnd]}>
-          <ContextMenu
-            options={boardViewMenuOptions}
-            hostMatchContents
-            trigger={
+      ) : (
+        <View style={styles.header}>
+          <View style={styles.headerSide}>
+            {onBack ? (
               <GlassRoundIconButton
-                icon="filter"
-                size={23}
-                accessibilityLabel="Board view"
-                embedInSwiftMenu
-                onPress={() => {}}
+                icon="arrow-left"
+                size={22}
+                accessibilityLabel="Go back"
+                onPress={() => {
+                  hapticLight();
+                  onBack();
+                }}
               />
-            }
-            triggerWrapperStyle={styles.headerFilterMenuTrigger}
-          />
+            ) : (
+              <View style={styles.headerSideSpacer} />
+            )}
+          </View>
+          <Text style={styles.title} numberOfLines={1}>
+            {displayBoardTitle}
+          </Text>
+          <View style={[styles.headerSide, styles.headerSideEnd]}>
+            <ContextMenu
+              options={boardViewMenuOptions}
+              hostMatchContents
+              trigger={
+                <GlassRoundIconButton
+                  icon="filter"
+                  size={23}
+                  accessibilityLabel="Board view"
+                  embedInSwiftMenu
+                  onPress={() => {}}
+                />
+              }
+              triggerWrapperStyle={styles.headerFilterMenuTrigger}
+            />
+          </View>
         </View>
-      </View>
+      )}
 
       {viewMode === 'board' ? (
         <View style={styles.boardArea}>
@@ -1486,34 +1502,6 @@ export default function BoardScreen({
         </View>
       )}
 
-      {viewMode === 'board' && dragging ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.archiveDropStrip,
-            {
-              height: insets.top + ARCHIVE_DROP_ZONE_HEIGHT,
-              paddingTop: insets.top,
-              backgroundColor: dragOverArchive
-                ? 'rgba(180, 40, 40, 0.42)'
-                : 'rgba(0, 0, 0, 0.48)',
-              borderBottomColor: dragOverArchive
-                ? 'rgba(255, 255, 255, 0.95)'
-                : 'rgba(255, 255, 255, 0.22)',
-              borderBottomWidth: dragOverArchive ? 2 : StyleSheet.hairlineWidth,
-            },
-          ]}
-        >
-          <Feather
-            name="archive"
-            size={24}
-            color="#fff"
-            style={{ opacity: 0.95 }}
-          />
-          <Text style={styles.archiveDropStripText}>Drop here to archive</Text>
-        </View>
-      ) : null}
-
       {viewMode === 'board' && dragging && draggingCard ? (
         <View pointerEvents="none" style={styles.cardDragOverlayRoot}>
           <Animated.View
@@ -1641,31 +1629,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f0e8',
     overflow: 'visible',
   },
-  archiveDropStrip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    /** Below flying card overlay; above header (20) and board content. */
-    zIndex: 21000,
-    elevation: 21,
+  /** Replaces the normal board header while dragging a card (Trello-style). */
+  archiveHeaderReplacement: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: BOARD_ARCHIVE_HEADER_ROW_HEIGHT,
+    zIndex: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.48)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  archiveHeaderReplacementActive: {
+    backgroundColor: 'rgba(180, 40, 40, 0.42)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  archiveHeaderReplacementText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
   },
   /** Wrapper must set z-index: RN only compares siblings; inner View z-index does not beat header/archive. */
   cardDragOverlayRoot: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 22000,
     elevation: 22,
-  },
-  archiveDropStripText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.2,
   },
   header: {
     flexDirection: 'row',
