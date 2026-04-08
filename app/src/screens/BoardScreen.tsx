@@ -58,11 +58,16 @@ import type {
   DashboardTile,
 } from '../types/dashboard';
 import {
+  boardDropZoneChrome,
+  BOARD_DROP_ZONE_CARD_RADIUS,
+} from '../board/boardDropZoneStyles';
+import {
   BOARD_CARD_ROW_HEIGHT,
   computeColumnHoverInsertIndex,
   computeHoverInsertIndex,
   moveCardToHover,
   removeCardFromBoard,
+  removeColumnAtIndex,
   reorderColumns,
 } from '../board/boardDragUtils';
 import { uid } from '../utils/id';
@@ -1006,6 +1011,9 @@ export default function BoardScreen({
       measure: (cb: (x: number, y: number, w: number, h: number) => void) => void;
     }) => {
       args.measure((x, y, w, h) => {
+        dragOverArchiveRef.current = false;
+        dragOverArchivePrevRef.current = false;
+        setDragOverArchive(false);
         const next: ListDraggingState = {
           fromIndex: args.columnIndex,
           startX: x,
@@ -1016,27 +1024,50 @@ export default function BoardScreen({
         listDraggingRef.current = next;
         setListDragging(next);
         setListHoverInsert(args.columnIndex);
+        // List-drag UI restructures the row; re-measure wraps after layout so hover uses real x/width.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            remeasureAllColumns();
+          });
+        });
       });
     },
-    []
+    [remeasureAllColumns]
   );
 
-  const onColumnListDragMove = useCallback((absX: number, absY: number) => {
-    lastAbsRef.current = { x: absX, y: absY };
-    const from = listDraggingRef.current?.fromIndex ?? null;
-    const next = computeColumnHoverInsertIndex(
-      absX,
-      columnWrapLayoutsRef.current,
-      columns.length,
-      from
-    );
-    setListHoverInsert(next);
-  }, [columns.length]);
+  const onColumnListDragMove = useCallback(
+    (absX: number, absY: number) => {
+      lastAbsRef.current = { x: absX, y: absY };
+      const overArchive = absY <= insets.top + BOARD_HEADER_ROW_HEIGHT;
+      dragOverArchiveRef.current = overArchive;
+      if (overArchive !== dragOverArchivePrevRef.current) {
+        dragOverArchivePrevRef.current = overArchive;
+        setDragOverArchive(overArchive);
+      }
+      if (overArchive) return;
+      const from = listDraggingRef.current?.fromIndex ?? null;
+      const next = computeColumnHoverInsertIndex(
+        absX,
+        columnWrapLayoutsRef.current,
+        columns.length,
+        from
+      );
+      setListHoverInsert(next);
+    },
+    [columns.length, insets.top]
+  );
 
   const onColumnListDragEnd = useCallback(() => {
     const d = listDraggingRef.current;
     const insert = listHoverInsertRef.current;
-    if (d != null && insert != null) {
+    const overArchive = dragOverArchiveRef.current;
+    dragOverArchiveRef.current = false;
+    dragOverArchivePrevRef.current = false;
+    setDragOverArchive(false);
+    if (d != null && overArchive) {
+      void hapticMedium();
+      setColumns((prev) => removeColumnAtIndex(prev, d.fromIndex));
+    } else if (d != null && insert != null) {
       setColumns((prev) => reorderColumns(prev, d.fromIndex, insert));
     }
     listDraggingRef.current = null;
@@ -1374,7 +1405,7 @@ export default function BoardScreen({
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {viewMode === 'board' && dragging ? (
+      {viewMode === 'board' && (dragging || listDragging) ? (
         <View
           pointerEvents="none"
           style={[
@@ -1502,7 +1533,11 @@ export default function BoardScreen({
                 const n = columns.length;
                 for (let i = 0; i <= n; i++) {
                   if (insertAt === i) {
-                    nodes.push(<BoardColumnPlaceholder key={`col-gap-${i}`} />);
+                    nodes.push(
+                      <View key={`col-gap-${i}`} style={styles.listPageShell}>
+                        <BoardColumnPlaceholder />
+                      </View>
+                    );
                   }
                   if (i < n) {
                     const col = boardViewColumns[i];
@@ -2120,10 +2155,8 @@ const styles = StyleSheet.create({
   inlineNewListBody: {
     minHeight: 220,
     maxHeight: 400,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.45)',
+    borderRadius: BOARD_DROP_ZONE_CARD_RADIUS,
+    ...boardDropZoneChrome,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 24,
@@ -2182,10 +2215,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e8e8e8',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
+    borderRadius: BOARD_DROP_ZONE_CARD_RADIUS,
+    ...boardDropZoneChrome,
     paddingVertical: 10,
     paddingHorizontal: 12,
     gap: 8,

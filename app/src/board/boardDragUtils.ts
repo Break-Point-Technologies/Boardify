@@ -51,13 +51,18 @@ export function computeColumnHoverInsertIndex(
   columnCount: number,
   skipColumnIndex: number | null = null
 ): number {
+  let sawAny = false;
   for (let i = 0; i < columnCount; i++) {
     if (skipColumnIndex === i) continue;
     const L = layouts[i];
     if (!L || L.width <= 0) continue;
+    sawAny = true;
     const mid = L.x + L.width / 2;
     if (absX < mid) return i;
   }
+  // No usable layouts yet (e.g. right after switching to the list-drag row). Returning `columnCount`
+  // would park the slot past the last column — often off-screen while horizontal scroll is locked.
+  if (!sawAny) return skipColumnIndex ?? 0;
   return columnCount;
 }
 
@@ -75,4 +80,11 @@ export function reorderColumns(
   pos = Math.max(0, Math.min(pos, next.length));
   next.splice(pos, 0, col);
   return next;
+}
+
+/** Removes a list column by index (e.g. dropped on archive). */
+export function removeColumnAtIndex(columns: BoardColumnData[], index: number): BoardColumnData[] {
+  const n = columns.length;
+  if (index < 0 || index >= n) return columns;
+  return [...columns.slice(0, index), ...columns.slice(index + 1)];
 }

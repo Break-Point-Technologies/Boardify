@@ -1,5 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import {
+  boardDropZoneChrome,
+  BOARD_DROP_ZONE_CARD_RADIUS,
+} from '../board/boardDropZoneStyles';
 import { BOARD_CARD_ROW_HEIGHT } from '../board/boardDragUtils';
 
 export function BoardCardPlaceholder({ height = BOARD_CARD_ROW_HEIGHT }: { height?: number }) {
@@ -14,11 +18,8 @@ const styles = StyleSheet.create({
   wrap: {
     marginBottom: 4,
     marginRight: 4,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(10,10,10,0.25)',
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    borderRadius: BOARD_DROP_ZONE_CARD_RADIUS,
+    ...boardDropZoneChrome,
   },
   inner: {
     minHeight: 56,
