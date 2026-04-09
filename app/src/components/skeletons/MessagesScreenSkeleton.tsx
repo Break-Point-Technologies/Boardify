@@ -1,33 +1,58 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import {
+  NEU_LIST_ROW_SHIFT,
+  neuListRowCardBase,
+  neuListRowShadowBase,
+} from '../NeuListRowPressable';
 import { SkeletonBlock } from './SkeletonBlock';
-import { neuListRowCardBase } from '../NeuListRowPressable';
 
 const ACCENTS = ['#a5d6a5', '#F3D9B1', '#b39ddb', '#d0d0d0', '#c4c4c4'];
 
-function RowSkeleton({ accent }: { accent: string }) {
+const NOTIFICATION_FACE = {
+  alignItems: 'flex-start' as const,
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  overflow: 'hidden' as const,
+};
+
+function RowSkeleton({
+  accent,
+  showUnread,
+}: {
+  accent: string;
+  showUnread: boolean;
+}) {
+  const leftBar = { borderLeftWidth: 4 as const, borderLeftColor: accent };
+
   return (
-    <View style={s.rowOuter}>
-      <View style={[s.shadow, { backgroundColor: accent }]} />
-      <View
-        style={[
-          neuListRowCardBase,
-          s.face,
-          { borderLeftWidth: 4, borderLeftColor: accent, alignItems: 'flex-start', paddingVertical: 14 },
-        ]}
-      >
-        <SkeletonBlock width={44} height={44} borderRadius={10} variant="onWhite" />
-        <View style={s.textCol}>
-          <View style={s.headlineLine}>
-            <SkeletonBlock height={16} width={72} borderRadius={5} variant="onWhite" />
-            <SkeletonBlock height={16} width={140} borderRadius={5} variant="onWhite" style={{ marginLeft: 6 }} />
-          </View>
-          <SkeletonBlock height={14} width="92%" borderRadius={5} variant="onWhite" style={{ marginTop: 6 }} />
+    <View style={s.neuWrap}>
+      <View style={[neuListRowShadowBase, { backgroundColor: accent }]} />
+      <View style={[neuListRowCardBase, NOTIFICATION_FACE, leftBar]}>
+        <View style={s.avatar}>
+          <SkeletonBlock width={22} height={22} borderRadius={6} variant="warm" />
         </View>
-        <View style={s.right}>
+        <View style={s.rowText}>
+          <View style={s.headlineRow}>
+            <SkeletonBlock height={15} width={68} borderRadius={5} variant="onWhite" />
+            <View style={s.headlineRest}>
+              <SkeletonBlock height={15} width="100%" borderRadius={5} variant="onWhite" />
+            </View>
+          </View>
+          <SkeletonBlock
+            height={13}
+            width="72%"
+            borderRadius={5}
+            variant="onWhite"
+            style={{ marginTop: 4 }}
+          />
+        </View>
+        <View style={s.rowRight}>
           <View style={s.timeStack}>
-            <SkeletonBlock height={12} width={44} borderRadius={4} variant="onWhite" />
-            <SkeletonBlock width={8} height={8} borderRadius={4} variant="onWhite" style={{ marginTop: 4 }} />
+            <SkeletonBlock height={12} width={38} borderRadius={4} variant="onWhite" />
+            {showUnread ? (
+              <SkeletonBlock width={8} height={8} borderRadius={4} variant="onWhite" />
+            ) : null}
           </View>
           <SkeletonBlock width={18} height={18} borderRadius={4} variant="onWhite" />
         </View>
@@ -36,55 +61,50 @@ function RowSkeleton({ accent }: { accent: string }) {
   );
 }
 
+/** Card rows only; parent screen supplies title, subtitle, and “Recent” like loaded state. */
 export function MessagesScreenSkeleton() {
   return (
-    <View style={s.list}>
+    <>
       {ACCENTS.map((a, i) => (
-        <RowSkeleton key={i} accent={a} />
+        <RowSkeleton key={i} accent={a} showUnread={i < 2} />
       ))}
-    </View>
+    </>
   );
 }
 
 const s = StyleSheet.create({
-  list: {
-    gap: 12,
-  },
-  rowOuter: {
+  neuWrap: {
     position: 'relative',
+    marginRight: NEU_LIST_ROW_SHIFT,
+    marginBottom: NEU_LIST_ROW_SHIFT,
   },
-  shadow: {
-    position: 'absolute',
-    left: 4,
-    top: 4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 14,
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#000',
+    backgroundColor: '#f0ebe3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  face: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#000',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    overflow: 'hidden',
-  },
-  textCol: {
+  rowText: {
     flex: 1,
     minWidth: 0,
     paddingRight: 8,
   },
-  headlineLine: {
+  headlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    minWidth: 0,
   },
-  right: {
+  headlineRest: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 4,
+  },
+  rowRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
