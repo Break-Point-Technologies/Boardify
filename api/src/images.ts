@@ -105,7 +105,6 @@ async function serveImage(request: Request, env: Env, key: string): Promise<Resp
   }
 }
 
-/** Pathname without /api prefix, e.g. /upload/profile-picture or /images/foo/bar */
 export async function handleImages(
   request: Request,
   env: Env,

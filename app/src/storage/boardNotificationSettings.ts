@@ -39,7 +39,6 @@ export function clampDayMinutes(m: number): number {
   return ((x % 1440) + 1440) % 1440;
 }
 
-/** Time-of-day as minutes from midnight (0–1439). */
 export function dateToNotificationMinutes(d: Date): number {
   return clampDayMinutes(d.getHours() * 60 + d.getMinutes());
 }

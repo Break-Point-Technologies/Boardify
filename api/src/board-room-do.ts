@@ -90,7 +90,7 @@ export class BoardRoom {
           server.send(JSON.stringify({ type: 'pong', ts: Date.now() }));
         }
       } catch {
-        /* ignore */
+        // ignore
       }
     });
 

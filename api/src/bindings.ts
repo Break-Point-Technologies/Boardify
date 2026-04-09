@@ -15,7 +15,8 @@ export interface Env {
   SMTP_PORT?: string;
   SMTP_USER?: string;
   SMTP_PASS?: string;
-  /** Optional Expo access token for higher push rate limits (https://expo.dev/accounts/[account]/settings/access-tokens). */
+  /** Optional. If unset and SMTP_USER is an email, that address is used as From / MAIL FROM (required by many hosts e.g. MXroute). */
+  SMTP_FROM?: string;
   EXPO_ACCESS_TOKEN?: string;
 }
 

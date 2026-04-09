@@ -2,6 +2,7 @@ import type { Env } from './bindings';
 import { jsonResponse } from './http';
 import { getCurrentUserFromSession } from './auth';
 import { hashPassword, verifyPassword, formatPasswordHash } from './lib/auth/password';
+import { auditRowToInboxItem, type AuditRow } from './inboxMap';
 
 export async function handleUser(
   request: Request,
@@ -224,6 +225,33 @@ export async function handleUser(
       .bind(Number(currentUser.id))
       .run();
     return jsonResponse(request, { ok: true });
+  }
+
+  if (pathname === '/user/messages' && request.method === 'GET') {
+    const userId = Number(currentUser.id);
+    const url = new URL(request.url);
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const offset = Math.max(0, parseInt(url.searchParams.get('offset') ?? '0', 10));
+
+    const { results } = await env.DB.prepare(
+      `SELECT a.id, a.board_id, a.at_iso, a.kind, a.summary, a.actor_user_id, a.metadata_json,
+              b.name as board_name, u.username as actor_username, u.email as actor_email
+       FROM board_audit_log a
+       INNER JOIN board_members m ON m.board_id = a.board_id AND m.user_id = ?
+       INNER JOIN boards b ON b.id = a.board_id AND b.archived_at IS NULL
+       LEFT JOIN users u ON u.id = a.actor_user_id
+       WHERE (a.actor_user_id IS NULL OR a.actor_user_id != ?)
+       ORDER BY a.at_iso DESC
+       LIMIT ? OFFSET ?`
+    )
+      .bind(userId, userId, limit, offset)
+      .all<AuditRow>();
+
+    const messages = (results ?? [])
+      .map((row) => auditRowToInboxItem(row, userId))
+      .filter((item): item is NonNullable<typeof item> => item != null);
+
+    return jsonResponse(request, { messages });
   }
 
   return null;

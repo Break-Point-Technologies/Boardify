@@ -17,7 +17,6 @@ type Props = {
   disabled?: boolean;
   label: string;
   labelStyle: TextStyle;
-  /** Use in vertical stacks (e.g. login) instead of a flex row of buttons. */
   layout?: 'row' | 'stack';
   leading?: React.ReactNode;
 };

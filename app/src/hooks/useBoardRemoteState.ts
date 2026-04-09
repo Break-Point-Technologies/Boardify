@@ -10,9 +10,6 @@ import {
 } from '../api/boards';
 import { mapFullColumnsToBoard, type ApiBoardRow } from '../api/boardMappers';
 
-/**
- * Loads board snapshot from the Worker and exposes refresh + helpers to persist drag/mutations.
- */
 export function useBoardRemoteState(boardId: string | undefined) {
   const [columns, setColumns] = useState<BoardColumnData[]>([]);
   const [boardRow, setBoardRow] = useState<ApiBoardRow | null>(null);
@@ -71,7 +68,6 @@ export function useBoardRemoteState(boardId: string | undefined) {
     []
   );
 
-  /** Re-number positions 0..n-1 for cards in one list (after reorder within column). */
   const persistCardOrderInList = useCallback(async (listId: string, orderedCardIds: string[]) => {
     await Promise.all(
       orderedCardIds.map((id, position) =>

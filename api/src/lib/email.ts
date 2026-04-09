@@ -22,6 +22,8 @@ export interface SmtpConfig {
   port: number;
   username: string;
   password: string;
+  /** Full RFC 5322 From value (e.g. "Boardify" <user@yourdomain.com>). Used for envelope MAIL FROM and From header when options.from is omitted. */
+  from?: string;
 }
 
 interface SmtpResult {
@@ -33,7 +35,10 @@ export async function sendEmail(
   options: EmailOptions,
   smtp?: SmtpConfig
 ): Promise<SmtpResult> {
-  const from = options.from || '"Boardify" <no-reply@boardify.app>';
+  const from =
+    options.from ||
+    smtp?.from ||
+    '"Boardify" <no-reply@boardify.app>';
   const toList = Array.isArray(options.to) ? options.to : [options.to];
 
   if (!smtp) {
@@ -48,28 +53,38 @@ export async function sendEmail(
   }
 
   try {
-    const useTls = smtp.port === 465;
-    const socket = connect(
-      { hostname: smtp.host, port: smtp.port },
-      useTls ? { secureTransport: 'on', allowHalfOpen: false } : undefined
-    );
-    const reader = socket.readable.getReader();
-    const writer = socket.writable.getWriter();
+    const implicitTls = smtp.port === 465;
+    const useStartTls = !implicitTls;
+
+    let socket = implicitTls
+      ? connect(
+          { hostname: smtp.host, port: smtp.port },
+          { secureTransport: 'on', allowHalfOpen: false }
+        )
+      : connect(
+          { hostname: smtp.host, port: smtp.port },
+          { secureTransport: 'starttls', allowHalfOpen: false }
+        );
+
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
-    let buffer = '';
+    const io = {
+      reader: socket.readable.getReader(),
+      writer: socket.writable.getWriter(),
+      buffer: '',
+    };
 
     async function readResponse(): Promise<{ code: number; text: string }> {
       let full = '';
       while (true) {
-        while (!buffer.includes('\r\n')) {
-          const { value, done } = await reader.read();
+        while (!io.buffer.includes('\r\n')) {
+          const { value, done } = await io.reader.read();
           if (done) throw new Error('SMTP connection closed unexpectedly');
-          buffer += decoder.decode(value, { stream: true });
+          io.buffer += decoder.decode(value, { stream: true });
         }
-        const idx = buffer.indexOf('\r\n');
-        const line = buffer.substring(0, idx);
-        buffer = buffer.substring(idx + 2);
+        const idx = io.buffer.indexOf('\r\n');
+        const line = io.buffer.substring(0, idx);
+        io.buffer = io.buffer.substring(idx + 2);
         full += line + '\r\n';
         const code = parseInt(line.substring(0, 3), 10);
         if (line.length >= 4 && line[3] === ' ') {
@@ -79,7 +94,7 @@ export async function sendEmail(
     }
 
     async function cmd(command: string): Promise<{ code: number; text: string }> {
-      await writer.write(encoder.encode(command + '\r\n'));
+      await io.writer.write(encoder.encode(command + '\r\n'));
       return readResponse();
     }
 
@@ -88,6 +103,19 @@ export async function sendEmail(
 
     const ehlo = await cmd('EHLO boardify.app');
     if (ehlo.code !== 250) throw new Error(`EHLO failed: ${ehlo.text}`);
+
+    if (useStartTls) {
+      const startTlsResp = await cmd('STARTTLS');
+      if (startTlsResp.code !== 220) {
+        throw new Error(`STARTTLS failed: ${startTlsResp.text}`);
+      }
+      socket = socket.startTls();
+      io.reader = socket.readable.getReader();
+      io.writer = socket.writable.getWriter();
+      io.buffer = '';
+      const ehloSecure = await cmd('EHLO boardify.app');
+      if (ehloSecure.code !== 250) throw new Error(`EHLO after TLS failed: ${ehloSecure.text}`);
+    }
 
     const auth = await cmd('AUTH LOGIN');
     if (auth.code !== 334) throw new Error(`AUTH failed: ${auth.text}`);
@@ -102,7 +130,9 @@ export async function sendEmail(
 
     for (const to of toList) {
       const rt = await cmd(`RCPT TO:<${to}>`);
-      if (rt.code !== 250) throw new Error(`RCPT TO <${to}> failed: ${rt.text}`);
+      if (rt.code !== 250 && rt.code !== 251) {
+        throw new Error(`RCPT TO <${to}> failed: ${rt.text}`);
+      }
     }
 
     const data = await cmd('DATA');
@@ -160,7 +190,7 @@ export async function sendEmail(
     }
     msg += `\r\n.\r\n`;
 
-    await writer.write(encoder.encode(msg));
+    await io.writer.write(encoder.encode(msg));
     const result = await readResponse();
     if (result.code !== 250) throw new Error(`Message rejected: ${result.text}`);
 

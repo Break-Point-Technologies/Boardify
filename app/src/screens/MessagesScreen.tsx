@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import type { CardLayout } from '../components/BoardCardExpandOverlay';
 import {
   View,
@@ -7,10 +7,13 @@ import {
   RefreshControl,
   Platform,
   StyleSheet,
+  ActivityIndicator,
+  Pressable,
   type View as RNView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
 import { IPAD_TAB_CONTENT_TOP_PADDING } from '../config/layout';
 import { TabScreenChrome } from '../components/TabScreenChrome';
 import { ActivitiesHeader, MOBILE_NAV_HEIGHT } from '../components/ActivitiesHeader';
@@ -26,65 +29,24 @@ import {
   notificationMatchesFilter,
   useMessageFilter,
 } from '../contexts/MessageFilterContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserMessages, type ApiInboxMessage } from '../api/user';
+import { formatRelativeTimeShort } from '../utils/formatRelativeTime';
+import { loadReadMessageIds, markMessageRead } from '../storage/messageReadIds';
 
-type PlaceholderNotification = {
+type InboxListItem = {
   id: string;
   kind: NotificationKind;
   actor: string;
   headline: string;
   detail?: string;
-  timeLabel: string;
+  atIso: string;
   unread?: boolean;
   accentColor?: string;
+  boardId?: string;
+  boardName?: string;
+  cardId?: string;
 };
-
-const PLACEHOLDER_NOTIFICATIONS: PlaceholderNotification[] = [
-  {
-    id: '1',
-    kind: 'assign',
-    actor: 'Alex Rivera',
-    headline: 'assigned you to a card',
-    detail: '“Ship Q2 roadmap” on Team backlog',
-    timeLabel: '12m ago',
-    unread: true,
-    accentColor: '#a5d6a5',
-  },
-  {
-    id: '2',
-    kind: 'comment',
-    actor: 'Jordan Lee',
-    headline: 'commented on a card you’re on',
-    detail: '“Can we bump the due date?”',
-    timeLabel: '1h ago',
-    unread: true,
-    accentColor: '#F3D9B1',
-  },
-  {
-    id: '3',
-    kind: 'mention',
-    actor: 'Sam Okonkwo',
-    headline: 'mentioned you in a note',
-    detail: 'Design review board',
-    timeLabel: 'Yesterday',
-    accentColor: '#b39ddb',
-  },
-  {
-    id: '4',
-    kind: 'board',
-    actor: 'Morgan Chen',
-    headline: 'added you to a board',
-    detail: 'Client onboarding',
-    timeLabel: '2d ago',
-  },
-  {
-    id: '5',
-    kind: 'invite',
-    actor: 'Taylor Brooks',
-    headline: 'invited you to a workspace',
-    detail: 'Northwind Labs',
-    timeLabel: 'Last week',
-  },
-];
 
 function iconForKind(kind: NotificationKind): keyof typeof Feather.glyphMap {
   switch (kind) {
@@ -102,13 +64,29 @@ function iconForKind(kind: NotificationKind): keyof typeof Feather.glyphMap {
   }
 }
 
+function mapApiToItems(messages: ApiInboxMessage[], readIds: Set<string>): InboxListItem[] {
+  return messages.map((m) => ({
+    id: m.id,
+    kind: m.messageKind,
+    actor: m.actorName,
+    headline: m.headline,
+    detail: m.detail,
+    atIso: m.atIso,
+    unread: !readIds.has(m.id),
+    accentColor: m.accentColor ?? undefined,
+    boardId: m.boardId,
+    boardName: m.boardName,
+    cardId: m.cardId ?? undefined,
+  }));
+}
+
 function NotificationRow({
   item,
   expandedSourceId,
   onExpand,
   registerRowView,
 }: {
-  item: PlaceholderNotification;
+  item: InboxListItem;
   expandedSourceId: string | null;
   onExpand: (data: ExpandedNotificationData) => void;
   registerRowView: (id: string, el: RNView | null) => void;
@@ -126,6 +104,8 @@ function NotificationRow({
     ? { borderLeftWidth: 4, borderLeftColor: item.accentColor }
     : undefined;
 
+  const timeLabel = formatRelativeTimeShort(item.atIso);
+
   const handlePress = useCallback(() => {
     hapticLight();
     requestAnimationFrame(() => {
@@ -137,7 +117,7 @@ function NotificationRow({
             actor: item.actor,
             headline: item.headline,
             detail: item.detail,
-            timeLabel: item.timeLabel,
+            timeLabel,
             accentColor: item.accentColor,
             layout: {
               x,
@@ -145,11 +125,14 @@ function NotificationRow({
               width: w > 0 ? w : 280,
               height: h > 0 ? h : 72,
             },
+            boardId: item.boardId,
+            boardName: item.boardName,
+            cardId: item.cardId,
           });
         });
       });
     });
-  }, [item, onExpand]);
+  }, [item, onExpand, timeLabel]);
 
   const hidden = expandedSourceId === item.id;
 
@@ -171,14 +154,14 @@ function NotificationRow({
             {item.headline}
           </Text>
           {item.detail ? (
-            <Text style={styles.rowDetail} numberOfLines={1}>
+            <Text style={styles.rowDetail} numberOfLines={2}>
               {item.detail}
             </Text>
           ) : null}
         </View>
         <View style={styles.rowRight}>
           <View style={styles.timeStack}>
-            <Text style={styles.time}>{item.timeLabel}</Text>
+            <Text style={styles.time}>{timeLabel}</Text>
             {item.unread ? <View style={styles.unreadDot} /> : null}
           </View>
           <Feather name="chevron-right" size={18} color="#666" />
@@ -194,17 +177,55 @@ export default function MessagesScreen() {
   const ipadPad = Platform.OS === 'ios' && Platform.isPad ? IPAD_TAB_CONTENT_TOP_PADDING : 0;
   const contentPaddingTop = (isWeb ? 24 : 12) + ipadPad;
 
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState<ExpandedNotificationData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { messageFilter } = useMessageFilter();
   const sourceRowViewsRef = useRef<Record<string, RNView | null>>({});
 
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [readIdsReady, setReadIdsReady] = useState(false);
+  const [rawMessages, setRawMessages] = useState<ApiInboxMessage[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [fetching, setFetching] = useState(false);
+
+  useEffect(() => {
+    void loadReadMessageIds().then((s) => {
+      setReadIds(s);
+      setReadIdsReady(true);
+    });
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    if (!user) return;
+    setLoadError(null);
+    setFetching(true);
+    try {
+      const { messages } = await getUserMessages({ limit: 80 });
+      setRawMessages(messages);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not load messages';
+      setLoadError(msg);
+    } finally {
+      setFetching(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user || !readIdsReady) return;
+      void loadMessages();
+    }, [user, readIdsReady, loadMessages])
+  );
+
+  const items = useMemo(
+    () => mapApiToItems(rawMessages, readIds),
+    [rawMessages, readIds]
+  );
+
   const visibleNotifications = useMemo(
-    () =>
-      PLACEHOLDER_NOTIFICATIONS.filter((n) =>
-        notificationMatchesFilter(messageFilter, n.kind, n.unread)
-      ),
-    [messageFilter]
+    () => items.filter((n) => notificationMatchesFilter(messageFilter, n.kind, n.unread)),
+    [items, messageFilter]
   );
 
   const registerRowView = useCallback((id: string, el: RNView | null) => {
@@ -239,17 +260,85 @@ export default function MessagesScreen() {
   );
 
   const onExpand = useCallback((data: ExpandedNotificationData) => {
+    void markMessageRead(data.id);
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(data.id);
+      return next;
+    });
     setExpanded(data);
   }, []);
 
   const onRefresh = useCallback(async () => {
+    if (!user) return;
     setRefreshing(true);
     hapticLight();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await loadMessages();
     setRefreshing(false);
+  }, [user, loadMessages]);
+
+  const onOpenBoard = useCallback((p: { boardId: string; boardName?: string }) => {
+    setExpanded(null);
+    router.push({
+      pathname: '/board',
+      params: { boardId: p.boardId, boardName: p.boardName ?? 'Board' },
+    });
   }, []);
 
   const androidRefreshOffset = MOBILE_NAV_HEIGHT + insets.top;
+
+  const listBody = !user ? (
+    <View style={styles.signedOutWrap}>
+      <Feather name="message-circle" size={40} color="#999" />
+      <Text style={styles.signedOutTitle}>Sign in to see messages</Text>
+      <Text style={styles.signedOutHint}>
+        Activity from boards you belong to shows up here — mentions, assignments, comments, and
+        updates.
+      </Text>
+      <Pressable
+        onPress={() => router.push('/account')}
+        style={styles.signedOutBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Open account tab"
+      >
+        <Text style={styles.signedOutBtnText}>Account</Text>
+        <Feather name="chevron-right" size={18} color="#0a0a0a" />
+      </Pressable>
+    </View>
+  ) : loadError ? (
+    <View style={styles.errorWrap}>
+      <Text style={styles.errorText}>{loadError}</Text>
+      <Pressable onPress={() => void loadMessages()} style={styles.retryBtn}>
+        <Text style={styles.retryBtnText}>Try again</Text>
+      </Pressable>
+    </View>
+  ) : fetching && rawMessages.length === 0 ? (
+    <View style={styles.loadingWrap}>
+      <ActivityIndicator size="large" color="#0a0a0a" />
+    </View>
+  ) : visibleNotifications.length === 0 ? (
+    <View style={styles.emptyFilter}>
+      <Feather name={messageFilter === 'all' ? 'inbox' : 'filter'} size={28} color="#999" />
+      <Text style={styles.emptyFilterTitle}>
+        {messageFilter === 'all' ? 'No activity yet' : 'Nothing to show'}
+      </Text>
+      <Text style={styles.emptyFilterHint}>
+        {messageFilter === 'all'
+          ? 'When teammates update boards you’re on, you’ll see it here.'
+          : `No notifications match “${MESSAGE_FILTER_LABELS[messageFilter]}”. Try another filter from the top left.`}
+      </Text>
+    </View>
+  ) : (
+    visibleNotifications.map((n) => (
+      <NotificationRow
+        key={n.id}
+        item={n}
+        expandedSourceId={expanded?.id ?? null}
+        onExpand={onExpand}
+        registerRowView={registerRowView}
+      />
+    ))
+  );
 
   const scroll = (
     <ScrollView
@@ -266,13 +355,15 @@ export default function MessagesScreen() {
       bounces={Platform.OS === 'ios'}
       overScrollMode={Platform.OS === 'android' ? 'never' : undefined}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#0a0a0a"
-          colors={['#0a0a0a']}
-          progressViewOffset={Platform.OS === 'android' ? androidRefreshOffset : undefined}
-        />
+        user ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#0a0a0a"
+            colors={['#0a0a0a']}
+            progressViewOffset={Platform.OS === 'android' ? androidRefreshOffset : undefined}
+          />
+        ) : undefined
       }
     >
       <Text style={styles.title}>Messages</Text>
@@ -285,28 +376,7 @@ export default function MessagesScreen() {
         <Text style={styles.sectionLabel}>Recent</Text>
       </View>
 
-      <View style={styles.list}>
-        {visibleNotifications.length === 0 ? (
-          <View style={styles.emptyFilter}>
-            <Feather name="filter" size={28} color="#999" />
-            <Text style={styles.emptyFilterTitle}>Nothing to show</Text>
-            <Text style={styles.emptyFilterHint}>
-              No notifications match “{MESSAGE_FILTER_LABELS[messageFilter]}”. Try another filter
-              from the top left.
-            </Text>
-          </View>
-        ) : (
-          visibleNotifications.map((n) => (
-            <NotificationRow
-              key={n.id}
-              item={n}
-              expandedSourceId={expanded?.id ?? null}
-              onExpand={onExpand}
-              registerRowView={registerRowView}
-            />
-          ))
-        )}
-      </View>
+      <View style={styles.list}>{listBody}</View>
     </ScrollView>
   );
 
@@ -316,6 +386,7 @@ export default function MessagesScreen() {
         data={expanded}
         onClose={() => setExpanded(null)}
         onMeasureSource={onMeasureSource}
+        onOpenBoard={onOpenBoard}
       />
     ) : null;
 
@@ -370,6 +441,69 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 12,
+  },
+  loadingWrap: {
+    paddingVertical: 48,
+    alignItems: 'center',
+  },
+  signedOutWrap: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  signedOutTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0a0a0a',
+    textAlign: 'center',
+  },
+  signedOutHint: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 300,
+    fontWeight: '500',
+  },
+  signedOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#0a0a0a',
+    backgroundColor: '#fff',
+  },
+  signedOutBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0a0a0a',
+  },
+  errorWrap: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    gap: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#b91c1c',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  retryBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#0a0a0a',
+  },
+  retryBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
   emptyFilter: {
     alignItems: 'center',

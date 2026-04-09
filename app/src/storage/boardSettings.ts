@@ -69,7 +69,6 @@ export function resolveBoardDisplayTitle(routeBoardName: string, settings: Board
   return route || 'My Board';
 }
 
-/** Merge Worker `boards.settings_json` into defaults (API-backed boards). */
 export function mergeBoardSettingsFromRemoteJson(settingsJson: string | null | undefined): BoardSettings {
   if (settingsJson == null || settingsJson === '') {
     return { ...BOARD_SETTINGS_DEFAULTS };

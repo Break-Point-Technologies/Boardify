@@ -426,7 +426,6 @@ export default function BoardScreen({
   const [inlineAddListOpen, setInlineAddListOpen] = useState(false);
   const [inlineAddListDraft, setInlineAddListDraft] = useState('');
   const [dashboardTiles, setDashboardTiles] = useState<DashboardTile[]>([]);
-  /** Only true after a successful GET so we never PUT an empty snapshot on load failure. */
   const [dashboardTilesSynced, setDashboardTilesSynced] = useState(false);
 
   useEffect(() => {

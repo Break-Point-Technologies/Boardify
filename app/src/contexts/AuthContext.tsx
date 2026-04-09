@@ -14,7 +14,6 @@ type AuthContextType = {
   refreshUser: (opts?: { silent?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
   setUserContext: (user: User) => void;
-  /** Clears stored session and user (e.g. after API 401). Does not call the server sign-out endpoint. */
   invalidateLocalAuth: () => Promise<void>;
 };
 
@@ -104,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             setUser(JSON.parse(cached) as User);
           } catch {
-            /* ignore */
+            // ignore
           }
         }
 

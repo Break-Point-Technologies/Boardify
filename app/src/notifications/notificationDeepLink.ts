@@ -2,7 +2,6 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import type { Router } from 'expo-router';
 
-/** Must match `EXPO_ANDROID_CHANNEL_ID` in the API (`boardExpoPush.ts`). */
 const ANDROID_CHANNEL_ID = 'boardify-updates';
 
 export async function ensureAndroidPushChannel(): Promise<void> {
@@ -22,9 +21,6 @@ function openBoardFromPayload(router: Router, data: Record<string, unknown> | un
   router.replace({ pathname: '/board', params: { boardId, boardName: name } });
 }
 
-/**
- * Opens the board screen when the user taps a push (foreground, background, or cold start).
- */
 export function registerPushNotificationDeepLinks(router: Router): () => void {
   void ensureAndroidPushChannel();
 

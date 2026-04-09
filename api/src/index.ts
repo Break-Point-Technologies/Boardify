@@ -15,7 +15,6 @@ function normalizePath(pathname: string): string {
   return pathname;
 }
 
-/** Strip /api prefix for internal routing (e.g. /api/images/x -> /images/x). */
 function stripApiPrefix(pathname: string): string {
   if (pathname === '/api') return '/';
   if (pathname.startsWith('/api/')) {

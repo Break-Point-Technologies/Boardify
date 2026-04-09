@@ -2,9 +2,6 @@ import { useEffect, useRef } from 'react';
 import { ENV } from '../config/env';
 import { getStoredSessionToken } from '../api/session';
 
-/**
- * Subscribes to board Durable Object broadcasts and debounces a full refetch.
- */
 export function useBoardWebSocket(boardId: string | undefined, onRefresh: () => void) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onRefreshRef = useRef(onRefresh);
@@ -36,7 +33,7 @@ export function useBoardWebSocket(boardId: string | undefined, onRefresh: () => 
         }, 500);
       };
       ws.onerror = () => {
-        /* ignore */
+        // ignore
       };
     })();
 
@@ -49,7 +46,7 @@ export function useBoardWebSocket(boardId: string | undefined, onRefresh: () => 
       try {
         ws?.close();
       } catch {
-        /* ignore */
+        // ignore
       }
     };
   }, [boardId]);

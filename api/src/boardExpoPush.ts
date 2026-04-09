@@ -1,11 +1,9 @@
 import type { Env } from './bindings';
 
-/** Matches app Android channel id in `expoPush.ts`. */
 export const EXPO_ANDROID_CHANNEL_ID = 'boardify-updates';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
-/** Noisy or self-only events — no remote push. */
 const NO_PUSH_EVENT_TYPES = new Set([
   'board_created',
   'lists_reordered',
@@ -165,7 +163,6 @@ export async function notifyBoardMembersExpoPush(
   await postExpoBatches(messages, env.EXPO_ACCESS_TOKEN);
 }
 
-/** Call before `DELETE FROM boards` so members and prefs still exist. */
 export async function notifyBoardDeletedExpoPush(
   env: Env,
   boardId: string,

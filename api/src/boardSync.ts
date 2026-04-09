@@ -1,7 +1,6 @@
 import type { Env } from './bindings';
 import { notifyBoardMembersExpoPush } from './boardExpoPush';
 
-/** Worker → DO broadcast uses AUTH_SECRET as X-Board-Sync-Secret. */
 export function getBoardBroadcastAuthSecret(env: Env): string {
   return (env.AUTH_SECRET || '').trim();
 }

@@ -67,7 +67,7 @@ export function buildCorsHeaders(req: Request, env: Env): Headers {
         headers.set('Access-Control-Allow-Credentials', 'true');
       }
     } catch {
-      /* ignore */
+      // ignore
     }
   }
 

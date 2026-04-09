@@ -7,7 +7,6 @@ import type {
   DashboardTile,
 } from '../types/dashboard';
 
-/** Raw board row from Worker `boards` table */
 export type ApiBoardRow = {
   id: string;
   owner_user_id: number;
@@ -20,7 +19,6 @@ export type ApiBoardRow = {
   updated_at: string;
 };
 
-/** Card object from `GET /boards/:id/full` (cardRowToApi + payload merge) */
 export type ApiCard = Record<string, unknown> & {
   id: string;
   title: string;
@@ -85,7 +83,6 @@ export function mapFullColumnsToBoard(columns: ApiColumn[]): BoardColumnData[] {
     }));
 }
 
-/** Build PATCH body for Worker from client card (omits id / server-only). */
 export function boardCardToPatchBody(card: BoardCardData, extra?: Record<string, unknown>): Record<string, unknown> {
   const {
     id: _id,

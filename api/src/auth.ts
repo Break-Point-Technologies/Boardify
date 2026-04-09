@@ -907,13 +907,28 @@ async function me(request: Request, env: Env): Promise<Response> {
   return jsonResponse(request, { user }, { status: 200 })
 }
 
+function smtpFromHeader(env: Env): string | undefined {
+  const custom = env.SMTP_FROM?.trim()
+  if (custom) {
+    if (custom.includes('<')) return custom
+    if (validateEmail(custom)) return `"Boardify" <${custom}>`
+    return undefined
+  }
+  const user = env.SMTP_USER?.trim()
+  if (user && validateEmail(user)) return `"Boardify" <${user}>`
+  return undefined
+}
+
 function getSmtp(env: Env): SmtpConfig | undefined {
   if (!env.SMTP_HOST) return undefined
+  const parsed = parseInt(env.SMTP_PORT || '587', 10)
+  const port = Number.isFinite(parsed) && parsed > 0 && parsed <= 65535 ? parsed : 587
   return {
     host: env.SMTP_HOST,
-    port: parseInt(env.SMTP_PORT || '25', 10),
+    port,
     username: env.SMTP_USER || '',
     password: env.SMTP_PASS || '',
+    from: smtpFromHeader(env),
   }
 }
 

@@ -24,9 +24,6 @@ function getEasProjectId(): string | undefined {
   return extra?.eas?.projectId;
 }
 
-/**
- * Registers or clears the Expo push token on the Worker based on Account → Notifications toggle.
- */
 export async function syncPushRegistrationFromAccountPrefs(): Promise<void> {
   const sessionToken = await getStoredSessionToken();
   if (!sessionToken || Platform.OS === 'web') return;
@@ -38,7 +35,7 @@ export async function syncPushRegistrationFromAccountPrefs(): Promise<void> {
     try {
       await unregisterExpoPushTokenApi();
     } catch {
-      /* offline / unauthorized */
+      // ignore
     }
   }
 }
@@ -79,6 +76,6 @@ export async function unregisterExpoPushFromApi(): Promise<void> {
   try {
     await unregisterExpoPushTokenApi();
   } catch {
-    /* ignore */
+    // ignore
   }
 }

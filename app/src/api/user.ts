@@ -73,3 +73,30 @@ export async function unregisterExpoPushToken(): Promise<void> {
     params: {},
   });
 }
+
+export type ApiInboxMessage = {
+  id: string;
+  boardId: string;
+  boardName: string;
+  cardId: string | null;
+  atIso: string;
+  actorName: string;
+  messageKind: 'mention' | 'assign' | 'comment' | 'invite' | 'board';
+  headline: string;
+  detail: string;
+  accentColor: string | null;
+};
+
+export async function getUserMessages(options?: {
+  limit?: number;
+  offset?: number;
+}): Promise<{ messages: ApiInboxMessage[] }> {
+  const res = await nativeFetch('/user/messages', {
+    method: 'GET',
+    params: {
+      limit: options?.limit ?? 50,
+      offset: options?.offset ?? 0,
+    },
+  });
+  return res.data as { messages: ApiInboxMessage[] };
+}
