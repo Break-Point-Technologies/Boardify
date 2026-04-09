@@ -172,7 +172,8 @@ function AppContent() {
           }}
         />
         <Stack.Screen name="profile" options={createBoardModalOptions} />
-        <Stack.Screen name="login" options={modalScreenOptions} />
+        <Stack.Screen name="login" options={createBoardModalOptions} />
+        <Stack.Screen name="verify-email" options={createBoardModalOptions} />
         <Stack.Screen name="create-board" options={createBoardModalOptions} />
         <Stack.Screen name="board-settings" options={createBoardModalOptions} />
         <Stack.Screen name="board-notifications" options={createBoardModalOptions} />

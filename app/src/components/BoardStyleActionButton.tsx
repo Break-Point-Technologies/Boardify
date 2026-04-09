@@ -17,6 +17,9 @@ type Props = {
   disabled?: boolean;
   label: string;
   labelStyle: TextStyle;
+  /** Use in vertical stacks (e.g. login) instead of a flex row of buttons. */
+  layout?: 'row' | 'stack';
+  leading?: React.ReactNode;
 };
 
 export function BoardStyleActionButton({
@@ -25,6 +28,8 @@ export function BoardStyleActionButton({
   disabled,
   label,
   labelStyle,
+  layout = 'row',
+  leading,
 }: Props) {
   const offset = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -44,7 +49,7 @@ export function BoardStyleActionButton({
         cancelAnimation(offset);
         offset.value = 0;
       }}
-      style={styles.boardBtnWrap}
+      style={[styles.boardBtnWrap, layout === 'stack' && styles.boardBtnWrapStack]}
     >
       <View
         style={[styles.boardBtnShadow, { backgroundColor: shadowColor }]}
@@ -57,7 +62,14 @@ export function BoardStyleActionButton({
           animatedStyle,
         ]}
       >
-        <Text style={[styles.boardBtnLabel, labelStyle]}>{label}</Text>
+        {leading ? (
+          <View style={styles.boardBtnRow}>
+            {leading}
+            <Text style={[styles.boardBtnLabel, styles.boardBtnLabelWithLeading, labelStyle]}>{label}</Text>
+          </View>
+        ) : (
+          <Text style={[styles.boardBtnLabel, labelStyle]}>{label}</Text>
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -71,6 +83,19 @@ const styles = StyleSheet.create({
     marginRight: SHIFT,
     marginBottom: SHIFT,
     zIndex: 0,
+  },
+  boardBtnWrapStack: {
+    flex: 0,
+    width: '100%',
+    alignSelf: 'stretch',
+    marginRight: 0,
+  },
+  boardBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
   },
   boardBtnShadow: {
     position: 'absolute',
@@ -106,5 +131,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
     color: '#0a0a0a',
+  },
+  boardBtnLabelWithLeading: {
+    flexShrink: 1,
+    textAlign: 'left',
   },
 });

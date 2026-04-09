@@ -258,7 +258,7 @@ u+.body .gmail-blend-difference{background:#000!important;mix-blend-mode:differe
   <!-- Footer -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="max-width:460px;width:100%;${bg(BG)};">
   <tr><td align="center" bgcolor="${BG}" style="padding:24px 0 0;font-family:${F};font-size:12px;line-height:1.6;color:${FOOT};${bg(BG)};">
-    &copy; ${year} Boardify &mdash; The ultimate tennis &amp; pickleball companion.<br/>
+    &copy; ${year} Boardify &mdash; Collaborative boards and tasks.<br/>
     You received this because an action was requested on your account.
   </td></tr>
   </table>
@@ -335,11 +335,10 @@ export function accountDeletionEmailHtml(deleteUrl: string): string {
       <tr><td bgcolor="${CARD}" style="padding:0 0 28px;${bg(CARD)};">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${INNER}" style="${bg(INNER)};border:1px solid ${BORDER_INNER};border-radius:10px;">
           <tr><td bgcolor="${INNER}" style="padding:18px 22px;font-family:${F};font-size:14px;line-height:2.1;color:${BODY};${bg(INNER)};">
-            <span style="color:#f87171;">&#10005;</span>&ensp;Your profile and personal data<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Teams you own and their members<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Matches, stats, and notes<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Messages and conversations<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Calendar events you created
+            <span style="color:#f87171;">&#10005;</span>&ensp;Your profile and account data<br/>
+            <span style="color:#f87171;">&#10005;</span>&ensp;Boards you own and shared access<br/>
+            <span style="color:#f87171;">&#10005;</span>&ensp;Lists, cards, and board content<br/>
+            <span style="color:#f87171;">&#10005;</span>&ensp;Preferences and notification settings
           </td></tr>
         </table>
       </td></tr>
@@ -415,7 +414,7 @@ export function parentalConsentEmailHtml(confirmUrl: string): string {
         <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span style="color:#ffffff;">Parent or guardian consent</span></div></div>
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:15px;line-height:1.65;color:${BODY};padding-bottom:24px;${bg(CARD)};">
-        A child in your care has signed up for Boardify (tennis, pickleball &amp; padel app) and needs your permission to use the app. By clicking below, you agree to our Terms of Service and Privacy Policy on their behalf and confirm you are their parent or legal guardian.
+        A child in your care has signed up for Boardify and needs your permission to use the app. By clicking below, you agree to our Terms of Service and Privacy Policy on their behalf and confirm you are their parent or legal guardian.
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:28px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">

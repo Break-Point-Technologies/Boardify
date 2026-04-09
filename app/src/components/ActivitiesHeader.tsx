@@ -53,7 +53,7 @@ function useSelectedTabsScreen(): TabsScreenName {
 
 export function ActivitiesHeader({
   embeddedInLayout = false,
-  user: _user = null,
+  user = null,
 }: {
   embeddedInLayout?: boolean;
   user?: User | null;
@@ -74,7 +74,7 @@ export function ActivitiesHeader({
 
   const goHome = () => {
     hapticLight();
-    router.push('/(tabs)');
+    router.push('/');
   };
 
   const iconColor = '#0a0a0a';
@@ -183,14 +183,28 @@ export function ActivitiesHeader({
               />
             </View>
             <View style={[styles.homeOrb, styles.homeOrbTrailing]} pointerEvents="box-none">
-              <Pressable
-                hitSlop={12}
-                accessibilityLabel="Create new board"
-                onPress={openCreateBoard}
-                style={styles.glassPressable}
-              >
-                {renderGlassRound('plus', 23)}
-              </Pressable>
+              {user ? (
+                <Pressable
+                  hitSlop={12}
+                  accessibilityLabel="Create new board"
+                  onPress={openCreateBoard}
+                  style={styles.glassPressable}
+                >
+                  {renderGlassRound('plus', 23)}
+                </Pressable>
+              ) : (
+                <Pressable
+                  hitSlop={12}
+                  accessibilityLabel="Sign in"
+                  onPress={() => {
+                    hapticLight();
+                    router.push('/login');
+                  }}
+                  style={styles.signInPill}
+                >
+                  <Text style={styles.signInPillText}>Sign in</Text>
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -348,6 +362,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
+    fontWeight: '700',
+    color: '#0a0a0a',
+  },
+  signInPill: {
+    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#000',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  signInPillText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#0a0a0a',
   },

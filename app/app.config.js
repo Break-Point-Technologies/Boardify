@@ -244,7 +244,7 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
       themeColor: '#f5f0e8',
-      description: 'Boardify — a modern React Native template.'
+      description: 'Boardify — collaborative boards, lists, and cards.'
     },
     backgroundColor: '#f5f0e8',
     extra: {

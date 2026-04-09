@@ -8,12 +8,15 @@ import {
   StyleSheet,
   Platform,
   Image,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { hapticLight } from '../utils/haptics';
+import { BoardStyleActionButton } from '../components/BoardStyleActionButton';
 import {
   signInWithEmail,
   signUpWithEmail,
@@ -26,26 +29,35 @@ import {
 import { fetchCurrentUser } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useNetwork } from '../contexts/NetworkContext';
-import { KeyboardSpacer } from '@/components/KeyboardSpacer';
 import { ENV } from '../config/env';
 import { isNetworkError } from '../utils/networkError';
-
-const resetGradientColors = ['rgba(0, 6, 42, 0.5)', 'rgba(0, 0, 0, 0.3)', 'transparent'] as const;
-const gradientStart = { x: 0, y: 0 } as const;
-const gradientEnd = { x: 1, y: 1 } as const;
 
 function isGoogleSignInConfigured(): boolean {
   return !!(ENV.GOOGLE_OAUTH_CLIENT_ID || ENV.GOOGLE_OAUTH_CLIENT_ID_DEV);
 }
 
+const BELOW_HEADER_GAP = 10;
+const BG = '#f5f0e8';
+
+const cardShadow =
+  Platform.OS === 'ios'
+    ? {
+        shadowColor: '#000',
+        shadowOffset: { width: 5, height: 5 },
+        shadowOpacity: 0.2,
+        shadowRadius: 0,
+      }
+    : { elevation: 5 };
+
 export default function LoginScreen() {
   const { setUserContext } = useAuth();
   const { isOnline } = useNetwork();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
 
   const navigateToHome = () => {
-    router.back();
+    router.replace('/');
   };
-  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -147,6 +159,7 @@ export default function LoginScreen() {
       }
       const user = await fetchCurrentUser();
       setUserContext(user);
+      navigateToHome();
     } catch (err: unknown) {
       const message = isNetworkError(err)
         ? "You're offline. Sign in when you're back online."
@@ -167,6 +180,7 @@ export default function LoginScreen() {
       }
       const user = await fetchCurrentUser();
       setUserContext(user);
+      navigateToHome();
     } catch (err: unknown) {
       const message = isNetworkError(err)
         ? "You're offline. Sign in when you're back online."
@@ -237,37 +251,78 @@ export default function LoginScreen() {
 
   const showApple = Platform.OS === 'ios';
   const signInDisabled = !isOnline || loading;
+  const canSubmit =
+    email.trim().length > 0 && password.length > 0 && (!isRegister || confirmPassword.length > 0);
+
+  const screenTitle =
+    resetStep !== 'none'
+      ? resetStep === 'email'
+        ? 'Reset password'
+        : resetStep === 'code'
+          ? 'Enter code'
+          : resetStep === 'newPassword'
+            ? 'New password'
+            : 'Password reset'
+      : isRegister
+        ? 'Create account'
+        : 'Sign in';
+
+  const toolbarClose = () => {
+    hapticLight();
+    Keyboard.dismiss();
+    if (resetStep !== 'none') {
+      if (resetStep === 'code') setResetStep('email');
+      else if (resetStep === 'newPassword') setResetStep('code');
+      else exitResetFlow();
+      return;
+    }
+    router.back();
+  };
+
+  const cancelPress = () => {
+    hapticLight();
+    Keyboard.dismiss();
+    exitResetFlow();
+    router.back();
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: 0 }]}>
-      <LinearGradient
-        colors={['rgba(0, 6, 42, 0.5)', 'rgba(0, 0, 0, 0.3)', 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={styles.container}>
+      <Stack.Screen>
+        <Stack.Header
+          style={
+            Platform.OS === 'ios'
+              ? { backgroundColor: 'transparent' }
+              : { backgroundColor: BG }
+          }
+        />
+        <Stack.Screen.Title style={{ fontWeight: '800', color: '#0a0a0a' }}>{screenTitle}</Stack.Screen.Title>
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button icon="xmark" onPress={toolbarClose} tintColor="#0a0a0a" />
+        </Stack.Toolbar>
+      </Stack.Screen>
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      <KeyboardAvoidingView
+        style={[styles.flex, styles.sheetFill]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/icon.png')}
-              style={styles.logo}
-            />
-            <Text style={styles.logoText}>Boardify</Text>
-            <Text style={styles.tagline}>
-              The ultimate tennis & pickleball companion
-            </Text>
-          </View>
-
-          <View style={styles.formContainer}>
-            <Text style={styles.formTitle}>
-              {isRegister ? 'Create Account' : 'Welcome Back'}
+        <ScrollView
+          style={styles.sheetFill}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: headerHeight + BELOW_HEADER_GAP,
+              paddingBottom: insets.bottom + 28,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            <Text style={styles.helper}>
+              Sign in to sync your boards across devices.
             </Text>
 
             {!isOnline ? (
@@ -284,11 +339,12 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
+            <Text style={styles.fieldLabel}>Email</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#9ca3af"
+                placeholder="you@example.com"
+                placeholderTextColor="#888"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -297,11 +353,12 @@ export default function LoginScreen() {
               />
             </View>
 
+            <Text style={styles.fieldLabel}>Password</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#9ca3af"
+                placeholder="Your password"
+                placeholderTextColor="#888888"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -318,22 +375,24 @@ export default function LoginScreen() {
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
+                hitSlop={8}
               >
                 <Feather
                   name={showPassword ? 'eye-off' : 'eye'}
                   size={20}
-                  color="#9ca3af"
+                  color="#666666"
                 />
               </TouchableOpacity>
             </View>
 
             {isRegister && (
               <>
+                <Text style={styles.fieldLabel}>Confirm password</Text>
                 <View style={styles.inputContainer}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Confirm Password"
-                    placeholderTextColor="#9ca3af"
+                    placeholder="Same as above"
+                    placeholderTextColor="#888"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
@@ -347,7 +406,7 @@ export default function LoginScreen() {
                     <Feather
                       name={showConfirmPassword ? 'eye-off' : 'eye'}
                       size={20}
-                      color="#9ca3af"
+                      color="#666666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -390,7 +449,7 @@ export default function LoginScreen() {
                                 ? '#22c55e'
                                 : passwordStrength === 'Strong'
                                   ? '#22c55e'
-                                  : '#9ca3af',
+                                  : '#666666',
                         },
                       ]}
                     >
@@ -409,32 +468,37 @@ export default function LoginScreen() {
                 }}
                 style={{ marginBottom: 16, alignSelf: 'flex-end', marginTop: -8 }}
               >
-                <Text style={{ color: '#60a5fa', fontSize: 14, fontWeight: '500' }}>
+                <Text style={{ color: '#15803d', fontSize: 14, fontWeight: '600' }}>
                   Forgot Password?
                 </Text>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={[styles.submitButton, signInDisabled && { opacity: 0.6 }]}
-              onPress={handleSubmit}
-              disabled={signInDisabled}
-            >
-              <LinearGradient
-                colors={['#22c55e', '#10b981']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.submitGradient}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.submitText}>
-                    {isRegister ? 'Create Account' : 'Sign In'}
-                  </Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+            <View style={styles.actions}>
+              <BoardStyleActionButton
+                shadowColor="#e0e0e0"
+                onPress={cancelPress}
+                label="Cancel"
+                labelStyle={styles.labelCancel}
+              />
+              <BoardStyleActionButton
+                shadowColor={canSubmit && !signInDisabled ? '#a5d6a5' : '#d0d0d0'}
+                onPress={() => void handleSubmit()}
+                disabled={!canSubmit || signInDisabled}
+                label={
+                  loading
+                    ? isRegister
+                      ? 'Creating…'
+                      : 'Signing in…'
+                    : isRegister
+                      ? 'Create account'
+                      : 'Sign in'
+                }
+                labelStyle={
+                  canSubmit && !signInDisabled ? styles.labelPrimary : styles.labelPrimaryDisabled
+                }
+              />
+            </View>
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
@@ -442,41 +506,40 @@ export default function LoginScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.socialButton,
-                !isGoogleSignInConfigured() && styles.socialButtonDisabled,
-                signInDisabled && { opacity: 0.6 },
-              ]}
-              onPress={handleGoogle}
-              disabled={signInDisabled || !isGoogleSignInConfigured()}
-            >
-              <Image
-                source={require('../../assets/google.png')}
-                style={styles.socialIcon}
+            <View style={styles.socialStack}>
+              <BoardStyleActionButton
+                layout="stack"
+                leading={
+                  <Image source={require('../../assets/google.png')} style={styles.socialIcon} />
+                }
+                shadowColor={isGoogleSignInConfigured() ? '#e8e8e8' : '#d0d0d0'}
+                onPress={handleGoogle}
+                disabled={signInDisabled || !isGoogleSignInConfigured()}
+                label={
+                  isGoogleSignInConfigured()
+                    ? 'Continue with Google'
+                    : 'Google (not configured)'
+                }
+                labelStyle={
+                  isGoogleSignInConfigured() && !signInDisabled
+                    ? styles.labelPrimary
+                    : styles.labelPrimaryDisabled
+                }
               />
-              <Text style={[
-                styles.socialButtonText,
-                !isGoogleSignInConfigured() && styles.socialButtonTextDisabled
-              ]}>
-                Continue with Google
-                {!isGoogleSignInConfigured() && ' (Not Configured)'}
-              </Text>
-            </TouchableOpacity>
-
-            {showApple && (
-              <TouchableOpacity
-                style={[styles.socialButton, signInDisabled && { opacity: 0.6 }]}
-                onPress={handleApple}
-                disabled={signInDisabled}
-              >
-                <Image
-                  source={require('../../assets/apple.png')}
-                  style={styles.socialIcon}
+              {showApple ? (
+                <BoardStyleActionButton
+                  layout="stack"
+                  leading={
+                    <Image source={require('../../assets/apple.png')} style={styles.socialIcon} />
+                  }
+                  shadowColor="#e8e8e8"
+                  onPress={handleApple}
+                  disabled={signInDisabled}
+                  label="Continue with Apple"
+                  labelStyle={!signInDisabled ? styles.labelPrimary : styles.labelPrimaryDisabled}
                 />
-                <Text style={styles.socialButtonText}>Continue with Apple</Text>
-              </TouchableOpacity>
-            )}
+              ) : null}
+            </View>
 
             <TouchableOpacity
               style={styles.switchButton}
@@ -493,61 +556,50 @@ export default function LoginScreen() {
               <Text style={styles.switchText}>
                 {isRegister ? 'Already have an account? ' : "Don't have an account? "}
                 <Text style={styles.switchLink}>
-                  {isRegister ? 'Sign In' : 'Register'}
+                  {isRegister ? 'Sign in' : 'Register'}
                 </Text>
               </Text>
             </TouchableOpacity>
-
-            <KeyboardSpacer extraOffset={48} />
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {resetStep !== 'none' && (
         <View style={styles.resetOverlay}>
-          <LinearGradient
-            colors={resetGradientColors}
-            start={gradientStart}
-            end={gradientEnd}
-            style={StyleSheet.absoluteFill}
-          />
-          <ScrollView
-            contentContainerStyle={[styles.resetScrollContent, { paddingBottom: insets.bottom + 24 }]}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          <KeyboardAvoidingView
+            style={[styles.flex, styles.sheetFill]}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
           >
-            <View style={[styles.formContainer, { maxWidth: 400, alignSelf: 'center', width: '100%' }]}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (resetStep === 'code') setResetStep('email');
-                  else if (resetStep === 'newPassword') setResetStep('code');
-                  else exitResetFlow();
-                }}
-                style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, padding: 4 }}
-              >
-                <Feather
-                  name={resetStep === 'email' || resetStep === 'success' ? 'x' : 'arrow-left'}
-                  size={22}
-                  color="#9ca3af"
-                />
-              </TouchableOpacity>
-
+            <ScrollView
+              contentContainerStyle={[
+                styles.resetScrollContent,
+                {
+                  paddingTop: headerHeight + BELOW_HEADER_GAP,
+                  paddingBottom: insets.bottom + 28,
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.card}>
               {resetStep === 'email' && (
                 <>
-                  <Text style={styles.formTitle}>Reset Password</Text>
-                  <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', marginBottom: 20 }}>
-                    Enter your email and we'll send you a 6-digit code.
+                  <Text style={styles.helper}>
+                    Enter your email and we&apos;ll send you a 6-digit code.
                   </Text>
                   {resetError ? (
                     <View style={styles.errorContainer}>
                       <Text style={styles.errorText}>{resetError}</Text>
                     </View>
                   ) : null}
+                  <Text style={styles.fieldLabel}>Email</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
-                      style={[styles.input, { letterSpacing: 0, textAlign: 'left', fontSize: 16, fontWeight: 'normal' }]}
-                      placeholder="Email"
-                      placeholderTextColor="#9ca3af"
+                      style={styles.input}
+                      placeholder="you@example.com"
+                      placeholderTextColor="#888"
                       value={resetEmail}
                       onChangeText={setResetEmail}
                       keyboardType="email-address"
@@ -556,46 +608,46 @@ export default function LoginScreen() {
                       autoFocus
                     />
                   </View>
-                  <TouchableOpacity
-                    style={[styles.submitButton, (!resetEmail || resetLoading || resendCooldown > 0) && { opacity: 0.6 }]}
-                    onPress={handleForgotSendCode}
-                    disabled={!resetEmail || resetLoading || resendCooldown > 0}
-                  >
-                    <LinearGradient
-                      colors={['#22c55e', '#10b981']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.submitGradient}
-                    >
-                      {resetLoading ? (
-                        <ActivityIndicator color="#ffffff" />
-                      ) : resendCooldown > 0 ? (
-                        <Text style={styles.submitText}>Send Code ({resendCooldown}s)</Text>
-                      ) : (
-                        <Text style={styles.submitText}>Send Code</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
+                  <BoardStyleActionButton
+                    layout="stack"
+                    shadowColor={
+                      resetEmail.trim() && !resetLoading && resendCooldown === 0 ? '#a5d6a5' : '#d0d0d0'
+                    }
+                    onPress={() => void handleForgotSendCode()}
+                    disabled={!resetEmail.trim() || resetLoading || resendCooldown > 0}
+                    label={
+                      resetLoading
+                        ? 'Sending…'
+                        : resendCooldown > 0
+                          ? `Send code (${resendCooldown}s)`
+                          : 'Send code'
+                    }
+                    labelStyle={
+                      resetEmail.trim() && !resetLoading && resendCooldown === 0
+                        ? styles.labelPrimary
+                        : styles.labelPrimaryDisabled
+                    }
+                  />
                 </>
               )}
 
               {resetStep === 'code' && (
                 <>
-                  <Text style={styles.formTitle}>Enter Code</Text>
-                  <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', marginBottom: 20 }}>
-                    We sent a 6-digit code to{'\n'}
-                    <Text style={{ color: '#ffffff', fontWeight: '600' }}>{resetEmail}</Text>
+                  <Text style={styles.helper}>
+                    We sent a 6-digit code to{' '}
+                    <Text style={{ fontWeight: '800', color: '#0a0a0a' }}>{resetEmail}</Text>
                   </Text>
                   {resetError ? (
                     <View style={styles.errorContainer}>
                       <Text style={styles.errorText}>{resetError}</Text>
                     </View>
                   ) : null}
+                  <Text style={styles.fieldLabel}>Code</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
-                      style={[styles.input, { textAlign: 'center', letterSpacing: 8, fontSize: 24, fontWeight: '700' }]}
+                      style={[styles.input, styles.codeInput]}
                       placeholder="000000"
-                      placeholderTextColor="#4b5563"
+                      placeholderTextColor="#888"
                       value={resetCode}
                       onChangeText={(t) => setResetCode(t.replace(/[^0-9]/g, '').slice(0, 6))}
                       keyboardType="number-pad"
@@ -603,34 +655,26 @@ export default function LoginScreen() {
                       autoFocus
                     />
                   </View>
-                  <Text style={{ color: '#fbbf24', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>
-                    Code expires in 15 minutes
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.submitButton, (resetCode.length !== 6 || resetLoading) && { opacity: 0.6 }]}
-                    onPress={handleVerifyCode}
+                  <Text style={styles.resetHint}>Code expires in 15 minutes.</Text>
+                  <BoardStyleActionButton
+                    layout="stack"
+                    shadowColor={resetCode.length === 6 && !resetLoading ? '#a5d6a5' : '#d0d0d0'}
+                    onPress={() => void handleVerifyCode()}
                     disabled={resetCode.length !== 6 || resetLoading}
-                  >
-                    <LinearGradient
-                      colors={['#22c55e', '#10b981']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.submitGradient}
-                    >
-                      {resetLoading ? (
-                        <ActivityIndicator color="#ffffff" />
-                      ) : (
-                        <Text style={styles.submitText}>Verify Code</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    label={resetLoading ? 'Verifying…' : 'Verify code'}
+                    labelStyle={
+                      resetCode.length === 6 && !resetLoading
+                        ? styles.labelPrimary
+                        : styles.labelPrimaryDisabled
+                    }
+                  />
                   <TouchableOpacity
-                    onPress={handleForgotSendCode}
+                    onPress={() => void handleForgotSendCode()}
                     disabled={resetLoading || resendCooldown > 0}
                     style={{ marginTop: 12, opacity: resendCooldown > 0 ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: '#60a5fa', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>
-                      {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+                    <Text style={styles.linkText}>
+                      {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -638,20 +682,18 @@ export default function LoginScreen() {
 
               {resetStep === 'newPassword' && (
                 <>
-                  <Text style={styles.formTitle}>New Password</Text>
-                  <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', marginBottom: 20 }}>
-                    Choose a new password for your account.
-                  </Text>
+                  <Text style={styles.helper}>Choose a new password for your account.</Text>
                   {resetError ? (
                     <View style={styles.errorContainer}>
                       <Text style={styles.errorText}>{resetError}</Text>
                     </View>
                   ) : null}
+                  <Text style={styles.fieldLabel}>New password</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
-                      style={[styles.input, { letterSpacing: 0, textAlign: 'left', fontSize: 16, fontWeight: 'normal', paddingRight: 48 }]}
-                      placeholder="New Password"
-                      placeholderTextColor="#9ca3af"
+                      style={[styles.input, styles.inputWithEye]}
+                      placeholder="New password"
+                      placeholderTextColor="#888"
                       value={newPassword}
                       onChangeText={setNewPassword}
                       secureTextEntry={!showNewPassword}
@@ -664,14 +706,15 @@ export default function LoginScreen() {
                       onPress={() => setShowNewPassword(!showNewPassword)}
                       hitSlop={8}
                     >
-                      <Feather name={showNewPassword ? 'eye-off' : 'eye'} size={20} color="#9ca3af" />
+                      <Feather name={showNewPassword ? 'eye-off' : 'eye'} size={20} color="#666666" />
                     </TouchableOpacity>
                   </View>
+                  <Text style={styles.fieldLabel}>Confirm</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
-                      style={[styles.input, { letterSpacing: 0, textAlign: 'left', fontSize: 16, fontWeight: 'normal', paddingRight: 48 }]}
-                      placeholder="Confirm New Password"
-                      placeholderTextColor="#9ca3af"
+                      style={[styles.input, styles.inputWithEye]}
+                      placeholder="Confirm new password"
+                      placeholderTextColor="#888"
                       value={confirmNewPassword}
                       onChangeText={setConfirmNewPassword}
                       secureTextEntry={!showConfirmNewPassword}
@@ -683,62 +726,48 @@ export default function LoginScreen() {
                       onPress={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
                       hitSlop={8}
                     >
-                      <Feather name={showConfirmNewPassword ? 'eye-off' : 'eye'} size={20} color="#9ca3af" />
+                      <Feather name={showConfirmNewPassword ? 'eye-off' : 'eye'} size={20} color="#666666" />
                     </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.submitButton, (!newPassword || !confirmNewPassword || resetLoading) && { opacity: 0.6 }]}
-                    onPress={handleResetPassword}
+                  <BoardStyleActionButton
+                    layout="stack"
+                    shadowColor={
+                      newPassword && confirmNewPassword && !resetLoading ? '#a5d6a5' : '#d0d0d0'
+                    }
+                    onPress={() => void handleResetPassword()}
                     disabled={!newPassword || !confirmNewPassword || resetLoading}
-                  >
-                    <LinearGradient
-                      colors={['#22c55e', '#10b981']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.submitGradient}
-                    >
-                      {resetLoading ? (
-                        <ActivityIndicator color="#ffffff" />
-                      ) : (
-                        <Text style={styles.submitText}>Reset Password</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    label={resetLoading ? 'Saving…' : 'Save password'}
+                    labelStyle={
+                      newPassword && confirmNewPassword && !resetLoading
+                        ? styles.labelPrimary
+                        : styles.labelPrimaryDisabled
+                    }
+                  />
                 </>
               )}
 
               {resetStep === 'success' && (
                 <>
-                  <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                    <View style={{
-                      width: 64, height: 64, borderRadius: 32,
-                      backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <Feather name="check" size={32} color="#22c55e" />
+                  <View style={styles.successIconWrap}>
+                    <View style={styles.successIconCircle}>
+                      <Feather name="check" size={32} color="#15803d" />
                     </View>
                   </View>
-                  <Text style={styles.formTitle}>Password Reset!</Text>
-                  <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
-                    Your password has been updated. Sign in with your new password.
+                  <Text style={styles.helper}>
+                    Your password was updated. Sign in with your new password.
                   </Text>
-                  <TouchableOpacity
-                    style={styles.submitButton}
+                  <BoardStyleActionButton
+                    layout="stack"
+                    shadowColor="#a5d6a5"
                     onPress={exitResetFlow}
-                  >
-                    <LinearGradient
-                      colors={['#22c55e', '#10b981']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.submitGradient}
-                    >
-                      <Text style={styles.submitText}>Back to Sign In</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    label="Back to sign in"
+                    labelStyle={styles.labelPrimary}
+                  />
                 </>
               )}
-            </View>
-          </ScrollView>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       )}
     </View>
@@ -748,80 +777,84 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#020617',
+    backgroundColor: BG,
+  },
+  flex: {
+    flex: 1,
+  },
+  sheetFill: {
+    flex: 1,
+    backgroundColor: BG,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  content: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    maxWidth: 480,
     width: '100%',
-    maxWidth: 400,
     alignSelf: 'center',
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logo: {
-    width: 64,
-    height: 64,
+  card: {
+    alignSelf: 'stretch',
+    backgroundColor: '#fff',
     borderRadius: 16,
-    marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#9ca3af',
-    textAlign: 'center',
-  },
-  formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#000',
     padding: 24,
+    ...cardShadow,
   },
-  formTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 24,
+  helper: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#444',
+    marginBottom: 22,
+    fontWeight: '500',
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0a0a0a',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: 'rgba(254, 226, 226, 0.95)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderRadius: 8,
+    borderColor: '#f87171',
+    borderRadius: 10,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#fca5a5',
+    color: '#991b1b',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   inputContainer: {
     position: 'relative',
     marginBottom: 16,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#0a0a0a',
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 14,
-    color: '#ffffff',
-    fontSize: 16,
+    backgroundColor: BG,
     minHeight: 48,
+  },
+  inputWithEye: {
+    paddingRight: 48,
+  },
+  codeInput: {
+    textAlign: 'center',
+    letterSpacing: 8,
+    fontSize: 24,
+    fontWeight: '700',
   },
   eyeButton: {
     position: 'absolute',
@@ -838,7 +871,7 @@ const styles = StyleSheet.create({
   strengthBar: {
     flex: 1,
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#e5e5e5',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -852,91 +885,99 @@ const styles = StyleSheet.create({
     width: 60,
     textAlign: 'right',
   },
-  submitButton: {
-    borderRadius: 8,
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    gap: 12,
+    width: '100%',
     overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    paddingBottom: 11,
   },
-  submitGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
+  labelCancel: {
+    color: '#0a0a0a',
   },
-  submitText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  labelPrimary: {
+    color: '#0a0a0a',
+  },
+  labelPrimaryDisabled: {
+    color: '#888',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#ccc',
   },
   dividerText: {
     marginHorizontal: 16,
-    color: '#9ca3af',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#666',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  socialStack: {
+    width: '100%',
     gap: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    paddingVertical: 14,
-    marginBottom: 12,
-    minHeight: 52,
-  },
-  socialButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  socialButtonDisabled: {
-    opacity: 0.5,
-  },
-  socialButtonTextDisabled: {
-    color: '#9ca3af',
+    marginBottom: 8,
   },
   socialIcon: {
     width: 20,
     height: 20,
   },
   switchButton: {
-    marginTop: 8,
+    marginTop: 12,
   },
   switchText: {
-    color: '#9ca3af',
+    color: '#666',
     fontSize: 14,
     textAlign: 'center',
   },
   switchLink: {
-    color: '#4ade80',
+    color: '#15803d',
+    fontWeight: '700',
+  },
+  linkText: {
+    color: '#15803d',
+    fontSize: 14,
+    textAlign: 'center',
     fontWeight: '600',
+  },
+  resetHint: {
+    color: '#92400e',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: '600',
+  },
+  successIconWrap: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#000',
   },
   resetOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#020617',
+    backgroundColor: BG,
     zIndex: 100,
   },
   resetScrollContent: {
     flexGrow: 1,
-    justifyContent: 'center' as const,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
 });

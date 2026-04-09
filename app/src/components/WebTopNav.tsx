@@ -116,7 +116,7 @@ export function WebTopNav({
 
   const handleTabPress = (tabName: string) => {
     hapticLight();
-    const route = tabName === 'index' ? '/(tabs)' : `/(tabs)/${tabName}`;
+    const route = tabName === 'index' ? '/' : `/${tabName}`;
     router.push(route as any);
     setMobileMenuOpen(false);
   };
@@ -129,13 +129,13 @@ export function WebTopNav({
 
   const handleAccountPress = () => {
     hapticLight();
-    router.push('/(tabs)/account');
+    router.push('/account');
     setMobileMenuOpen(false);
   };
 
   const handleLogoPress = () => {
     hapticLight();
-    router.push('/(tabs)');
+    router.push('/');
     setMobileMenuOpen(false);
   };
 
@@ -257,7 +257,7 @@ export function WebTopNav({
             <View className="flex-row items-center gap-4">
               {tabs.map((tab) => {
                 const isActive = tab.name === 'index'
-                  ? (pathname === '/(tabs)' || pathname === '/(tabs)/' || pathname === '/')
+                  ? pathname === '/' || pathname === '/index'
                   : pathname.includes(`/${tab.name}`);
                 return (
                   <Pressable
@@ -353,7 +353,7 @@ export function WebTopNav({
               <View className="flex flex-col gap-1 py-4">
                 {tabs.map((tab) => {
                   const isActive = tab.name === 'index'
-                    ? (pathname === '/(tabs)' || pathname === '/(tabs)/' || pathname === '/')
+                    ? pathname === '/' || pathname === '/index'
                     : pathname.includes(`/${tab.name}`);
                   return (
                     <Pressable

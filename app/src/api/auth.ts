@@ -193,7 +193,7 @@ export interface User {
     id: string;
     email: string;
     username: string;
-    mode?: 'tennis' | 'pickleball';
+    mode?: string;
     statProfile?: 'basic' | 'intermediate' | 'advanced';
     profilePictureUrl?: string | null;
     displayName?: string;

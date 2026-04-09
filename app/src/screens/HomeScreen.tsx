@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Platform,
   StyleSheet,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,7 +27,7 @@ import { apiBoardToListItem } from '../api/boardMappers';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { loading } = useAuth();
+  const { user, loading, invalidateLocalAuth } = useAuth();
   const { sortMode } = useBoardSort();
   const scrollViewRef = useRef<ScrollView>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,21 +41,30 @@ export default function HomeScreen() {
       const { boards: rows } = await listBoards();
       setBoards((rows ?? []).map(apiBoardToListItem));
     } catch (e: unknown) {
+      const status = typeof e === 'object' && e !== null && 'status' in e ? (e as { status?: number }).status : undefined;
+      if (status === 401) {
+        await invalidateLocalAuth();
+        setBoards([]);
+        setBoardsError(null);
+        return;
+      }
       const msg = e instanceof Error ? e.message : 'Could not load boards';
       setBoardsError(msg);
       setBoards([]);
     }
-  }, []);
+  }, [invalidateLocalAuth]);
 
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
       void loadBoards();
-    }, [loadBoards])
+    }, [loadBoards, user])
   );
 
   const sortedBoards = useMemo(() => sortBoards(boards, sortMode), [boards, sortMode]);
 
   const onRefresh = async () => {
+    if (!user) return;
     setRefreshing(true);
     hapticLight();
     await loadBoards();
@@ -79,6 +89,71 @@ export default function HomeScreen() {
       <View style={{ flex: 1, backgroundColor: '#f5f0e8', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0a0a0a" />
       </View>
+    );
+  }
+
+  if (!user) {
+    const ipadPadGuest = Platform.OS === 'ios' && Platform.isPad ? IPAD_TAB_CONTENT_TOP_PADDING : 0;
+    const contentPaddingTopGuest = (isWeb ? 24 : 12) + ipadPadGuest;
+    if (isWeb) {
+      return (
+        <View className="flex-1" style={{ backgroundColor: '#f5f0e8' }}>
+          <ActivitiesHeader user={null} />
+          <ScrollView
+            contentContainerStyle={{
+              paddingTop: contentPaddingTopGuest,
+              paddingBottom: insets.bottom + 24,
+              paddingHorizontal: 24,
+              flexGrow: 1,
+              maxWidth: 480,
+              alignSelf: 'center',
+              width: '100%',
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={homeStyles.hero}>
+              <Text style={homeStyles.title}>Welcome</Text>
+              <Text style={homeStyles.subtitle}>Sign in to load your boards and stay in sync.</Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                router.push('/login');
+              }}
+              style={homeStyles.signInCta}
+            >
+              <Text style={homeStyles.signInCtaText}>Sign in</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      );
+    }
+    return (
+      <TabScreenChrome>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: contentPaddingTopGuest,
+            paddingBottom: insets.bottom + 24,
+            paddingHorizontal: 16,
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={homeStyles.hero}>
+            <Text style={homeStyles.title}>Welcome</Text>
+            <Text style={homeStyles.subtitle}>Sign in to load your boards and stay in sync.</Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              router.push('/login');
+            }}
+            style={homeStyles.signInCta}
+          >
+            <Text style={homeStyles.signInCtaText}>Sign in</Text>
+          </Pressable>
+        </ScrollView>
+      </TabScreenChrome>
     );
   }
 
@@ -150,7 +225,7 @@ export default function HomeScreen() {
   if (isWeb) {
     return (
       <View className="flex-1" style={{ backgroundColor: '#f5f0e8' }}>
-        <ActivitiesHeader />
+        <ActivitiesHeader user={user} />
         {scroll}
       </View>
     );
@@ -223,5 +298,19 @@ const homeStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#666',
+  },
+  signInCta: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#0a0a0a',
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  signInCtaText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

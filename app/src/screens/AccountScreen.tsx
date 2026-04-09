@@ -42,7 +42,7 @@ const DEFAULT_CONFIG: AccountConfig = {
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, invalidateLocalAuth } = useAuth();
   const [config, setConfig] = useState<AccountConfig>(DEFAULT_CONFIG);
   const [defaultBoardLabel, setDefaultBoardLabel] = useState('None');
   const isWeb = Platform.OS === 'web';
@@ -63,19 +63,28 @@ export default function AccountScreen() {
           setDefaultBoardLabel('None');
           return;
         }
+        if (!user) {
+          setDefaultBoardLabel(id ?? 'None');
+          return;
+        }
         try {
           const { boards: rows } = await listBoards();
           if (cancel) return;
           const row = rows?.find((b) => b.id === id);
           setDefaultBoardLabel(row?.name ?? id);
-        } catch {
+        } catch (e: unknown) {
+          const status =
+            typeof e === 'object' && e !== null && 'status' in e ? (e as { status?: number }).status : undefined;
+          if (status === 401) {
+            await invalidateLocalAuth();
+          }
           if (!cancel) setDefaultBoardLabel(id);
         }
       })();
       return () => {
         cancel = true;
       };
-    }, [])
+    }, [user, invalidateLocalAuth])
   );
 
   const persistUiPrefs = useCallback(async (next: Pick<AccountConfig, 'notificationsEnabled' | 'theme'>) => {
@@ -151,6 +160,20 @@ export default function AccountScreen() {
           </Text>
         </View>
 
+        {!user ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.signInCard}
+            onPress={() => {
+              hapticLight();
+              router.push('/login');
+            }}
+          >
+            <Text style={styles.signInCardTitle}>Sign in</Text>
+            <Text style={styles.signInCardSub}>Use your email, Google, or Apple to sync boards.</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.cardWrap}>
@@ -212,27 +235,33 @@ export default function AccountScreen() {
           <View style={styles.cardWrap}>
             <View style={styles.cardShadow} />
             <View style={styles.card}>
-              <ConfigRow
-                label="Profile"
-                sublabel="Name, photo"
-                onPress={() => {
-                  hapticLight();
-                  router.push('/profile');
-                }}
-                showChevron
-              />
-              <ConfigRowDivider />
-              <ConfigRow
-                label="Sign out"
-                sublabel=""
-                onPress={() => {
-                  hapticLight();
-                  Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Sign out', style: 'destructive', onPress: () => logout() },
-                  ]);
-                }}
-              />
+              {user ? (
+                <>
+                  <ConfigRow
+                    label="Profile"
+                    sublabel="Name, photo"
+                    onPress={() => {
+                      hapticLight();
+                      router.push('/profile');
+                    }}
+                    showChevron
+                  />
+                  <ConfigRowDivider />
+                  <ConfigRow
+                    label="Sign out"
+                    sublabel=""
+                    onPress={() => {
+                      hapticLight();
+                      Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Sign out', style: 'destructive', onPress: () => logout() },
+                      ]);
+                    }}
+                  />
+                </>
+              ) : (
+                <ConfigRow label="Profile" sublabel="Sign in to edit your profile" />
+              )}
             </View>
           </View>
         </View>
@@ -303,6 +332,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#666',
     marginTop: 6,
+    fontWeight: '500',
+  },
+  signInCard: {
+    backgroundColor: '#0a0a0a',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#000',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  signInCardTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  signInCardSub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
     fontWeight: '500',
   },
   section: {

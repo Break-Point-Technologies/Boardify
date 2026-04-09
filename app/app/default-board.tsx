@@ -23,6 +23,7 @@ import { listBoards } from '../src/api/boards';
 import { apiBoardToListItem } from '../src/api/boardMappers';
 import { getStoredDefaultBoardId, setStoredDefaultBoardId } from '../src/storage/accountPrefs';
 import { sortBoards, useBoardSort } from '../src/contexts/BoardSortContext';
+import { useAuth } from '../src/contexts/AuthContext';
 import { NeuListRowPressable } from '../src/components/NeuListRowPressable';
 
 const BELOW_HEADER_GAP = 10;
@@ -106,6 +107,7 @@ export default function DefaultBoardScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { sortMode } = useBoardSort();
+  const { user, invalidateLocalAuth } = useAuth();
   const [boards, setBoards] = useState<BoardListItem[]>([]);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -114,17 +116,26 @@ export default function DefaultBoardScreen() {
     const id = await getStoredDefaultBoardId();
     setSavedId(id);
     setSelectedId(id);
+    if (!user) {
+      setBoards([]);
+      return;
+    }
     try {
       const { boards: rows } = await listBoards();
       setBoards((rows ?? []).map(apiBoardToListItem));
-    } catch {
+    } catch (e: unknown) {
+      const status =
+        typeof e === 'object' && e !== null && 'status' in e ? (e as { status?: number }).status : undefined;
+      if (status === 401) {
+        await invalidateLocalAuth();
+      }
       setBoards([]);
     }
-  }, []);
+  }, [user, invalidateLocalAuth]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      void load();
     }, [load])
   );
 
