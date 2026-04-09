@@ -1540,7 +1540,14 @@ export default function BoardScreen({
   ]);
 
   if (boardLoading && columns.length === 0) {
-    return <BoardScreenSkeleton paddingTop={insets.top} titleBarWidth={Math.min(200, screenW * 0.42)} />;
+    return (
+      <BoardScreenSkeleton
+        paddingTop={insets.top}
+        bottomInset={insets.bottom}
+        horizontalPadding={Platform.OS === 'web' ? 24 : 16}
+        titleBarWidth={Math.min(200, screenW * 0.42)}
+      />
+    );
   }
 
   if (boardError && columns.length === 0) {

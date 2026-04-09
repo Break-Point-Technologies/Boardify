@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
+import { BOARD_GLASS_BOTTOM_BAR_CLEARANCE } from '../BoardGlassBottomBar';
 import { SkeletonBlock } from './SkeletonBlock';
 
 const HEADER_H = 69;
+const HEADER_ORB = 45;
 const COL_W = 280;
 const COL_GAP = 16;
 const CARD_H = 88;
-const BOTTOM_PAD = 110;
 
 /** Matches BoardColumn: COLUMN_SHIFT 5, column shadow, grey inner shell. */
 const COL_SHIFT = 5;
@@ -50,31 +51,57 @@ function ColumnSkeleton({ cardCount }: { cardCount: number }) {
 
 export function BoardScreenSkeleton({
   paddingTop,
+  bottomInset,
+  horizontalPadding = 16,
   titleBarWidth = 168,
 }: {
   paddingTop: number;
+  bottomInset: number;
+  horizontalPadding?: number;
   titleBarWidth?: number;
 }) {
+  const stripBottomPad =
+    24 + bottomInset + BOARD_GLASS_BOTTOM_BAR_CLEARANCE;
+
   return (
     <View style={[s.root, { paddingTop }]}>
-      <View style={s.header}>
-        <SkeletonBlock width={44} height={44} borderRadius={22} />
-        <View style={s.titleSlot}>
-          <SkeletonBlock height={22} width={titleBarWidth} borderRadius={6} />
+      <View style={[s.header, { height: HEADER_H }]}>
+        <View style={s.headerSide}>
+          <SkeletonBlock
+            width={HEADER_ORB}
+            height={HEADER_ORB}
+            borderRadius={HEADER_ORB / 2}
+          />
         </View>
-        <View style={s.headerEnd}>
-          <SkeletonBlock width={44} height={44} borderRadius={22} />
+        <View style={s.titleSlot}>
+          <SkeletonBlock height={26} width={titleBarWidth} borderRadius={6} />
+        </View>
+        <View style={[s.headerSide, s.headerSideEnd]}>
+          <SkeletonBlock
+            width={HEADER_ORB}
+            height={HEADER_ORB}
+            borderRadius={HEADER_ORB / 2}
+          />
         </View>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.stripContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <ColumnSkeleton cardCount={2} />
-        <ColumnSkeleton cardCount={3} />
-      </ScrollView>
+      <View style={s.boardArea}>
+        <ScrollView
+          horizontal
+          style={s.columnsScrollView}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[
+            s.stripContent,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingBottom: stripBottomPad,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ColumnSkeleton cardCount={2} />
+          <ColumnSkeleton cardCount={3} />
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -91,25 +118,35 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    minHeight: HEADER_H,
     backgroundColor: '#f5f0e8',
     zIndex: 20,
+    overflow: 'visible',
+  },
+  headerSide: {
+    width: HEADER_ORB,
+    alignItems: 'flex-start',
+    overflow: 'visible',
+    zIndex: 2,
+  },
+  headerSideEnd: {
+    alignItems: 'flex-end',
   },
   titleSlot: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     paddingHorizontal: 8,
   },
-  headerEnd: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minWidth: 44,
+  boardArea: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'visible',
+  },
+  columnsScrollView: {
+    flexGrow: 1,
+    zIndex: 0,
   },
   stripContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: BOTTOM_PAD,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
