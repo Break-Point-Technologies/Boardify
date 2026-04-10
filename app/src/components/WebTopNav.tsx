@@ -12,8 +12,6 @@ import {
 } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { Avatar } from './Avatar';
@@ -49,7 +47,6 @@ export function WebTopNav({
   tabs,
 }: WebTopNavProps) {
   const { colors, resolvedScheme } = useTheme();
-  const isNavDark = resolvedScheme === 'dark';
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -162,7 +159,12 @@ export function WebTopNav({
     if (loading) {
       return (
         <View style={themed.avatarContainer}>
-          <SkeletonBlock width={36} height={36} borderRadius={18} variant="dark" />
+          <SkeletonBlock
+            width={36}
+            height={36}
+            borderRadius={18}
+            variant={resolvedScheme === 'dark' ? 'dark' : 'warm'}
+          />
         </View>
       );
     }
@@ -208,10 +210,17 @@ export function WebTopNav({
       <Pressable
         onPress={handleSignInPress}
         hitSlop={8}
-        className="flex-row items-center rounded-full border border-emerald-300/30 bg-emerald-500/80 px-4 py-2 shadow-lg shadow-emerald-500/20"
-        style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.92 : 1,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          borderRadius: 999,
+          backgroundColor: colors.primaryButtonBg,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        })}
       >
-        <Text className="text-sm font-semibold text-white">Sign In</Text>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryButtonText }}>Sign In</Text>
       </Pressable>
     );
   };
@@ -273,9 +282,11 @@ export function WebTopNav({
     [colors]
   );
 
-  const tabActive = isNavDark ? '#60a5fa' : '#2563eb';
-  const tabInactive = isNavDark ? 'rgba(255, 255, 255, 0.6)' : colors.textSecondary;
-  const barLabelColor = isNavDark ? '#ffffff' : colors.textPrimary;
+  const tabActive = colors.boardLink;
+  const tabInactive = colors.textSecondary;
+  const barLabelColor = colors.textPrimary;
+  const activeTabBg =
+    resolvedScheme === 'dark' ? 'rgba(122, 184, 255, 0.12)' : 'rgba(12, 102, 228, 0.1)';
 
   return (
     <>
@@ -283,25 +294,18 @@ export function WebTopNav({
         style={{
           height: totalHeight,
           paddingTop: insets.top,
-          backgroundColor: isNavDark ? undefined : colors.canvas,
-          borderBottomWidth: isNavDark ? 0 : StyleSheet.hairlineWidth,
-          borderBottomColor: isNavDark ? 'transparent' : colors.divider,
+          backgroundColor: colors.boardHeaderBg,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.divider,
+          ...(Platform.OS === 'web'
+            ? ({
+                position: 'sticky' as const,
+                top: 0,
+                zIndex: 50,
+              } as const)
+            : {}),
         }}
-        className={isNavDark ? 'sticky top-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur' : 'sticky top-0 z-50'}
       >
-        {isNavDark ? (
-          <>
-            <LinearGradient
-              colors={['rgba(96, 165, 250, 0.18)', 'rgba(34, 197, 94, 0.14)', 'rgba(2, 6, 23, 0.9)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-            <View className="absolute inset-0 bg-black/35" />
-          </>
-        ) : null}
-
         <View
           className="flex-1 flex-row items-center justify-between"
           style={{
@@ -350,11 +354,7 @@ export function WebTopNav({
                     <View
                       className="flex-row items-center gap-2 px-3 py-2 rounded-lg transition-colors"
                       style={{
-                        backgroundColor: isActive
-                          ? isNavDark
-                            ? 'rgba(96, 165, 250, 0.15)'
-                            : 'rgba(37, 99, 235, 0.12)'
-                          : 'transparent',
+                        backgroundColor: isActive ? activeTabBg : 'transparent',
                       }}
                     >
                       <Feather
@@ -387,13 +387,9 @@ export function WebTopNav({
                 className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.8 : 1,
-                  backgroundColor: mobileMenuOpen
-                    ? isNavDark
-                      ? 'rgba(255, 255, 255, 0.1)'
-                      : colors.surfaceMuted
-                    : 'transparent',
+                  backgroundColor: mobileMenuOpen ? colors.surfaceMuted : 'transparent',
                   borderWidth: 1,
-                  borderColor: isNavDark ? 'rgba(255,255,255,0.15)' : colors.divider,
+                  borderColor: colors.divider,
                 })}
               >
                 {mobileMenuOpen ? (
@@ -461,11 +457,7 @@ export function WebTopNav({
                       <View
                         className="px-4 py-3 mx-4 rounded-xl flex-row items-center gap-3"
                         style={{
-                          backgroundColor: isActive
-                            ? isNavDark
-                              ? 'rgba(96, 165, 250, 0.15)'
-                              : 'rgba(37, 99, 235, 0.12)'
-                            : 'transparent',
+                          backgroundColor: isActive ? activeTabBg : 'transparent',
                         }}
                       >
                         <Feather
@@ -486,7 +478,15 @@ export function WebTopNav({
                   );
                 })}
 
-                <View className="mt-4 pt-4 border-t border-white/10 mx-4">
+                <View
+                  style={{
+                    marginTop: 16,
+                    paddingTop: 16,
+                    marginHorizontal: 16,
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: colors.divider,
+                  }}
+                >
                   {user ? (
                     <>
                       <Pressable
@@ -520,11 +520,25 @@ export function WebTopNav({
                     <Pressable
                       onPress={handleSignInPress}
                       style={({ pressed }) => ({
-                        opacity: pressed ? 0.8 : 1,
+                        opacity: pressed ? 0.92 : 1,
                       })}
                     >
-                      <View className="px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex-row items-center justify-center gap-2">
-                        <Text className="text-sm font-semibold text-emerald-300">Sign In</Text>
+                      <View
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          backgroundColor: colors.primaryButtonBg,
+                          borderWidth: StyleSheet.hairlineWidth,
+                          borderColor: colors.border,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryButtonText }}>
+                          Sign In
+                        </Text>
                       </View>
                     </Pressable>
                   )}
