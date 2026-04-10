@@ -1,16 +1,20 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchCurrentUser, logout as apiLogout, User } from '../api/auth';
-import { getSession } from '../api/auth';
-import { getStoredSessionToken } from '../api/session';
+import { clearSessionToken, getStoredSessionToken } from '../api/session';
+import {
+  syncPushRegistrationFromAccountPrefs,
+  unregisterExpoPushFromApi,
+} from '../notifications/expoPush';
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  refreshUser: () => Promise<void>;
+  refreshUser: (opts?: { silent?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
   setUserContext: (user: User) => void;
+  invalidateLocalAuth: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => { },
   logout: async () => { },
   setUserContext: () => { },
+  invalidateLocalAuth: async () => { },
 });
 
 const AUTH_USER_KEY = 'authUser';
@@ -27,22 +32,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUser = async () => {
-    setLoading(true);
+  const invalidateLocalAuth = useCallback(async () => {
+    await clearSessionToken();
+    setUser(null);
+    await AsyncStorage.removeItem(AUTH_USER_KEY);
+  }, []);
+
+  const refreshUser = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const fetched = await fetchCurrentUser();
       setUser(fetched);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(fetched));
     } catch (e: any) {
-      const isAuthError = e?.status === 401 || e?.status === 403 || e?.message?.toLowerCase().includes('unauthorized');
+      const isAuthError =
+        e?.status === 401 ||
+        e?.status === 403 ||
+        String(e?.message ?? '')
+          .toLowerCase()
+          .includes('unauthorized');
       if (isAuthError) {
         setUser(null);
         await AsyncStorage.removeItem(AUTH_USER_KEY);
+        await clearSessionToken();
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   const logout = async () => {
     setLoading(true);
@@ -51,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
+      await unregisterExpoPushFromApi();
       setUser(null);
       await AsyncStorage.removeItem(AUTH_USER_KEY);
       setLoading(false);
@@ -78,25 +97,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        const token = await getStoredSessionToken();
         const cached = await AsyncStorage.getItem(AUTH_USER_KEY);
         if (cached && mounted) {
-          const parsed: User = JSON.parse(cached);
-          setUser(parsed);
+          try {
+            setUser(JSON.parse(cached) as User);
+          } catch {
+            // ignore
+          }
         }
 
-        const [session, token] = await Promise.all([getSession(), getStoredSessionToken()]);
-        if (session?.session && mounted) {
-          await refreshUser();
-        } else if (mounted) {
-          if (!cached || !token) {
+        if (!token) {
+          if (mounted) {
             setUser(null);
             await AsyncStorage.removeItem(AUTH_USER_KEY);
           }
+          return;
         }
-      } catch (e) {
+
+        await refreshUser({ silent: true });
+      } catch {
         if (mounted) {
           setUser(null);
           await AsyncStorage.removeItem(AUTH_USER_KEY);
+          await clearSessionToken();
         }
       } finally {
         if (mounted) {
@@ -105,15 +129,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    checkSession();
+    void checkSession();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshUser]);
+
+  useEffect(() => {
+    if (!user || Platform.OS === 'web') return;
+    void syncPushRegistrationFromAccountPrefs();
+  }, [user?.id]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refreshUser, logout, setUserContext }}>
+    <AuthContext.Provider
+      value={{ user, loading, refreshUser, logout, setUserContext, invalidateLocalAuth }}
+    >
       {children}
     </AuthContext.Provider>
   );

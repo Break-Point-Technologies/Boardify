@@ -144,10 +144,16 @@ module.exports = {
     scheme: 'boardify',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     plugins: [
       'expo-router',
+      [
+        'expo-notifications',
+        {
+          enableBackgroundRemoteNotifications: true,
+        },
+      ],
       '@react-native-community/datetimepicker',
       [
         '@react-native-google-signin/google-signin',
@@ -238,7 +244,7 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
       themeColor: '#f5f0e8',
-      description: 'Boardify — a modern React Native template.'
+      description: 'Boardify — collaborative boards, lists, and cards.'
     },
     backgroundColor: '#f5f0e8',
     extra: {

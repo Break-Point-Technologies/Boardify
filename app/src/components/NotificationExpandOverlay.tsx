@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import type { CardLayout } from './BoardCardExpandOverlay';
+import { useTheme } from '../theme';
 
 const LIST_TITLE_SIZE = 15;
 const LIST_TITLE_LH = 21;
@@ -53,12 +54,16 @@ export type ExpandedNotificationData = {
   timeLabel: string;
   accentColor?: string;
   layout: CardLayout;
+  boardId?: string;
+  boardName?: string;
+  cardId?: string;
 };
 
 type Props = {
   data: ExpandedNotificationData;
   onClose: () => void;
   onMeasureSource?: (callback: (layout: CardLayout) => void) => void;
+  onOpenBoard?: (p: { boardId: string; boardName?: string; cardId?: string }) => void;
 };
 
 function kindBadgeLabel(kind: NotificationKind): string {
@@ -93,7 +98,8 @@ function iconForKind(kind: NotificationKind): keyof typeof Feather.glyphMap {
   }
 }
 
-export function NotificationExpandOverlay({ data, onClose, onMeasureSource }: Props) {
+export function NotificationExpandOverlay({ data, onClose, onMeasureSource, onOpenBoard }: Props) {
+  const { colors } = useTheme();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -389,9 +395,31 @@ export function NotificationExpandOverlay({ data, onClose, onMeasureSource }: Pr
                   ) : null}
                   <Text style={styles.timeInBody}>{data.timeLabel}</Text>
                   <Animated.View style={detailPlaceholderWrapStyle}>
-                    <Text style={styles.detailPlaceholder}>
-                      Open the board or card to reply or take action — coming soon.
-                    </Text>
+                    {data.boardId && onOpenBoard ? (
+                      <Pressable
+                        onPress={() => {
+                          hapticLight();
+                          onOpenBoard({
+                            boardId: data.boardId!,
+                            boardName: data.boardName,
+                            cardId: data.cardId,
+                          });
+                        }}
+                        style={[
+                          styles.openBoardBtn,
+                          { backgroundColor: colors.canvas, borderColor: colors.border },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open board"
+                      >
+                        <Text style={[styles.openBoardBtnText, { color: colors.textPrimary }]}>Open board</Text>
+                        <Feather name="arrow-right" size={18} color="#0a0a0a" />
+                      </Pressable>
+                    ) : (
+                      <Text style={styles.detailPlaceholder}>
+                        Board shortcuts appear when this notification is linked to a board.
+                      </Text>
+                    )}
                   </Animated.View>
                 </Animated.View>
               </Animated.View>
@@ -517,5 +545,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     lineHeight: 20,
+  },
+  openBoardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  openBoardBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

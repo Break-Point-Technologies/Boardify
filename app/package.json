@@ -62,7 +62,9 @@
   },
   "expo": {
     "install": {
-      "exclude": ["react-native-worklets"]
+      "exclude": [
+        "react-native-worklets"
+      ]
     }
   },
   "devDependencies": {

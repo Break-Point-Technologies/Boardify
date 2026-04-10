@@ -1,9 +1,10 @@
-import React from 'react';
-import { Platform, DynamicColorIOS, View, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { AppTopNav, WebTopNav } from '../../src/components';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useTheme } from '../../src/theme';
 
 const ACCOUNT_TAB_ICON = require('../../assets/icons/account-tab.png');
 const BOARDS_TAB_ICON = require('../../assets/icons/board-tab.png');
@@ -20,24 +21,39 @@ const TAB_ITEMS = [
 
 export default function TabsLayout() {
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
   const isWeb = Platform.OS === 'web';
 
-  const tabBarTintColor = Platform.OS === 'ios'
-    ? DynamicColorIOS({ dark: '#0a0a0a', light: '#0a0a0a' })
-    : '#0a0a0a';
-  const tabBarLabelColor = Platform.OS === 'ios'
-    ? DynamicColorIOS({ dark: 'rgba(10,10,10,0.6)', light: 'rgba(10,10,10,0.6)' })
-    : 'rgba(10,10,10,0.6)';
+  const tabBarTintColor = colors.bottomBarIcon;
+  const tabBarLabelColor = colors.bottomBarIconMuted;
+  const tabBarBlurEffect = colors.headerBlurMaterial;
+  const tabBarBackgroundColor = colors.glassFallbackBg;
+  const tabScreenBg = useMemo(() => ({ backgroundColor: colors.canvas }), [colors.canvas]);
+
+  const layoutStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.canvas,
+        },
+        contentWrapper: {
+          flex: 1,
+          overflow: 'visible',
+        },
+      }),
+    [colors.canvas]
+  );
 
   if (isWeb) {
     return (
-      <View style={styles.container}>
+      <View style={layoutStyles.container}>
         <WebTopNav
           user={user}
           loading={loading}
           tabs={TAB_ITEMS}
         />
-        <View style={[styles.contentWrapper, { paddingTop: 0 }]}>
+        <View style={[layoutStyles.contentWrapper, { paddingTop: 0 }]}>
           <Tabs
             screenOptions={{
               headerShown: false,
@@ -60,25 +76,26 @@ export default function TabsLayout() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.contentWrapper} collapsable={false}>
+    <View style={layoutStyles.container}>
+      <View style={layoutStyles.contentWrapper} collapsable={false}>
         <NativeTabs
           labelStyle={{
             color: tabBarLabelColor,
           }}
           tintColor={tabBarTintColor}
           disableTransparentOnScrollEdge
-          blurEffect="none"
-          backgroundColor="transparent"
+          blurEffect={tabBarBlurEffect}
+          backgroundColor={tabBarBackgroundColor}
           shadowColor="transparent"
         >
           {TAB_ITEMS.map((item) => (
-            <NativeTabs.Trigger key={item.name} name={item.name}>
+            <NativeTabs.Trigger
+              key={item.name}
+              name={item.name}
+              contentStyle={tabScreenBg}
+            >
               <TabLabel>{item.label}</TabLabel>
-              <TabIcon
-                src={item.iconSrc}
-                selectedColor={tabBarTintColor}
-              />
+              <TabIcon src={item.iconSrc} selectedColor={tabBarTintColor} />
             </NativeTabs.Trigger>
           ))}
         </NativeTabs>
@@ -87,14 +104,3 @@ export default function TabsLayout() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f0e8',
-  },
-  contentWrapper: {
-    flex: 1,
-    overflow: 'visible',
-  },
-});

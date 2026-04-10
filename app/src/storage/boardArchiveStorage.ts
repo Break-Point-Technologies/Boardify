@@ -214,7 +214,6 @@ export async function loadBoardAuditLog(boardName: string): Promise<BoardAuditEn
   return s.auditLog;
 }
 
-/** Append a row to the board activity log (adds, edits, archives, etc.). */
 export async function appendBoardAuditEntry(
   boardName: string,
   kind: BoardAuditKind,
