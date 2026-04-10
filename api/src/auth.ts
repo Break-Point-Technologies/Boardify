@@ -1,7 +1,14 @@
 import type { Env, AuthenticatedUser } from './bindings'
 import { jsonResponse } from './http'
 import { hashPassword, verifyPassword, validatePassword, validateEmail, formatPasswordHash } from './lib/auth/password'
-import { sendEmail, passwordResetEmailHtml, accountDeletionEmailHtml, emailVerificationHtml, getIconAttachment, type SmtpConfig } from './lib/email'
+import {
+  sendEmail,
+  passwordResetEmailHtml,
+  accountDeletionEmailHtml,
+  emailVerificationHtml,
+  emailLogoAbsoluteUrl,
+  type SmtpConfig,
+} from './lib/email'
 import {
   generateSessionToken,
   createSession,
@@ -360,14 +367,20 @@ async function signUpEmail(request: Request, env: Env): Promise<Response> {
       ).bind(verifyId, `email_verify:${userId}`, verifyToken, verifyExpiresAt, now, now),
     ])
     const appUrl = getAppUrl(request, env)
+    const logoUrl = emailLogoAbsoluteUrl(appUrl)
     const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(verifyToken)}`
-    await sendEmail({
-      to: body.email,
-      subject: 'Verify your email - Boardify',
-      html: emailVerificationHtml(verifyUrl),
-      text: `Verify your Boardify email by opening this link: ${verifyUrl}\n\nThis link expires in 24 hours.`,
-      inlineAttachments: [await getIconAttachment()],
-    }, getSmtp(env))
+    const signUpEmailResult = await sendEmail(
+      {
+        to: body.email,
+        subject: 'Verify your email - Boardify',
+        html: emailVerificationHtml(verifyUrl, logoUrl),
+        text: `Verify your Boardify email by opening this link: ${verifyUrl}\n\nThis link expires in 24 hours.`,
+      },
+      getSmtp(env)
+    )
+    if (!signUpEmailResult.success) {
+      console.error('Sign-up verification email failed:', signUpEmailResult.error)
+    }
 
     return createAuthSession(request, env, userId)
   } catch (error) {
@@ -968,13 +981,19 @@ async function forgotPassword(request: Request, env: Env): Promise<Response> {
         ).bind(id, `pw_reset:${email}`, code, expiresAt, now, now),
       ])
 
-      await sendEmail({
-        to: email,
-        subject: 'Reset Your Boardify Password',
-        html: passwordResetEmailHtml(code),
-        text: `Your Boardify password reset code is: ${code}\n\nThis code expires in 15 minutes.`,
-        inlineAttachments: [await getIconAttachment()],
-      }, getSmtp(env))
+      const logoUrl = emailLogoAbsoluteUrl(getAppUrl(request, env))
+      const resetEmailResult = await sendEmail(
+        {
+          to: email,
+          subject: 'Reset Your Boardify Password',
+          html: passwordResetEmailHtml(code, logoUrl),
+          text: `Your Boardify password reset code is: ${code}\n\nThis code expires in 15 minutes.`,
+        },
+        getSmtp(env)
+      )
+      if (!resetEmailResult.success) {
+        console.error('Password reset email failed:', resetEmailResult.error, '| to:', email)
+      }
     }
 
     return jsonResponse(request, { message: 'If an account exists with that email, a reset code has been sent.' })
@@ -1088,15 +1107,26 @@ async function requestDeleteAccount(request: Request, env: Env): Promise<Respons
     ])
 
     const appUrl = getAppUrl(request, env)
+    const logoUrl = emailLogoAbsoluteUrl(appUrl)
     const deleteUrl = `${appUrl}/delete-account/${token}`
 
-    await sendEmail({
-      to: user.email!,
-      subject: 'Confirm Account Deletion - Boardify',
-      html: accountDeletionEmailHtml(deleteUrl),
-      text: `You requested to delete your Boardify account. Click this link to confirm: ${deleteUrl}\n\nThis link expires in 1 hour.`,
-      inlineAttachments: [await getIconAttachment()],
-    }, getSmtp(env))
+    const deleteEmailResult = await sendEmail(
+      {
+        to: user.email!,
+        subject: 'Confirm Account Deletion - Boardify',
+        html: accountDeletionEmailHtml(deleteUrl, logoUrl),
+        text: `You requested to delete your Boardify account. Click this link to confirm: ${deleteUrl}\n\nThis link expires in 1 hour.`,
+      },
+      getSmtp(env)
+    )
+    if (!deleteEmailResult.success) {
+      console.error('Account deletion confirmation email failed:', deleteEmailResult.error)
+      return jsonResponse(
+        request,
+        { error: { message: 'Could not send confirmation email. Try again later.' } },
+        { status: 503 }
+      )
+    }
 
     return jsonResponse(request, { message: 'A confirmation email has been sent.' })
   } catch (error) {
@@ -1192,14 +1222,25 @@ async function resendVerificationEmail(request: Request, env: Env): Promise<Resp
     ])
 
     const appUrl = getAppUrl(request, env)
+    const logoUrl = emailLogoAbsoluteUrl(appUrl)
     const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(verifyToken)}`
-    await sendEmail({
-      to: user.email!,
-      subject: 'Verify your email - Boardify',
-      html: emailVerificationHtml(verifyUrl),
-      text: `Verify your Boardify email by opening this link: ${verifyUrl}\n\nThis link expires in 24 hours.`,
-      inlineAttachments: [await getIconAttachment()],
-    }, getSmtp(env))
+    const resendResult = await sendEmail(
+      {
+        to: user.email!,
+        subject: 'Verify your email - Boardify',
+        html: emailVerificationHtml(verifyUrl, logoUrl),
+        text: `Verify your Boardify email by opening this link: ${verifyUrl}\n\nThis link expires in 24 hours.`,
+      },
+      getSmtp(env)
+    )
+    if (!resendResult.success) {
+      console.error('Resend verification email failed:', resendResult.error)
+      return jsonResponse(
+        request,
+        { error: { message: 'Could not send verification email. Try again later or contact support.' } },
+        { status: 503 }
+      )
+    }
 
     return jsonResponse(request, { message: 'Verification email sent. Check your inbox.' })
   } catch (error) {

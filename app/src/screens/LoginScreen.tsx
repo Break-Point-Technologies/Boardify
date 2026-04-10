@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +27,7 @@ import {
   verifyResetCode,
   resetPassword,
 } from '../api/auth';
-import { fetchCurrentUser } from '../api/auth';
+import { fetchCurrentUser, resendVerificationEmail } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useNetwork } from '../contexts/NetworkContext';
 import { ENV } from '../config/env';
@@ -348,6 +349,15 @@ export default function LoginScreen() {
         const user = await fetchCurrentUser();
         setUserContext(user);
         if (user.emailVerified === false) {
+          try {
+            await resendVerificationEmail();
+          } catch (e: unknown) {
+            const detail =
+              e instanceof Error
+                ? e.message
+                : 'For `wrangler dev --env dev` (including --remote), add SMTP_* to api/.dev.vars.dev — dashboard secrets are not loaded into dev.';
+            Alert.alert('Verification email not sent', detail);
+          }
           router.replace('/verify-email');
         } else {
           navigateToHome();

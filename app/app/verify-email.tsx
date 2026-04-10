@@ -166,9 +166,9 @@ export default function VerifyEmailScreen() {
         >
           <View style={styles.card}>
             <Text style={styles.helper}>
-              We sent a verification link to{' '}
-              <Text style={{ fontWeight: '800', color: colors.textPrimary }}>{user?.email ?? 'your email'}</Text>.
-              Open it on this device, then tap Continue.
+              Open the verification link sent to{' '}
+              <Text style={{ fontWeight: '800', color: colors.textPrimary }}>{user?.email ?? 'your email'}</Text>{' '}
+              on this device, then tap Continue. If nothing arrived, check spam or tap Resend below.
             </Text>
             <View style={styles.actions}>
               <BoardStyleActionButton

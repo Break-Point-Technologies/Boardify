@@ -22,7 +22,6 @@ export interface SmtpConfig {
   port: number;
   username: string;
   password: string;
-  /** Full RFC 5322 From value (e.g. "Boardify" <user@yourdomain.com>). Used for envelope MAIL FROM and From header when options.from is omitted. */
   from?: string;
 }
 
@@ -204,55 +203,48 @@ export async function sendEmail(
   }
 }
 
-const ICON_CID = 'boardify-icon@boardify.app';
 const F = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 const MONO = "'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
-export async function getIconAttachment(): Promise<InlineAttachment> {
-  const { EMAIL_ICON_BASE64 } = await import('./email-assets');
-  return {
-    cid: ICON_CID,
-    filename: 'icon_circle.png',
-    contentType: 'image/png',
-    base64: EMAIL_ICON_BASE64,
-  };
+const DEFAULT_EMAIL_APP_ORIGIN = 'https://boardify.mybreakpoint.app';
+
+export function emailLogoAbsoluteUrl(webAppOrigin: string | undefined): string {
+  const base = (webAppOrigin?.trim() || DEFAULT_EMAIL_APP_ORIGIN).replace(/\/$/, '');
+  return `${base}/icon_circle.png`;
 }
 
 function bg(hex: string): string {
   return `background-color:${hex};background-image:linear-gradient(${hex},${hex})`;
 }
 
-const BG           = '#020617'; // slate-950 – outer / body background
-const CARD         = '#0f172a'; // slate-900 – card background
-const INNER        = '#1e293b'; // slate-800 – inset elements
-const BORDER       = '#1e293b'; // slate-800 – card border
-const BORDER_INNER = '#334155'; // slate-700 – inner borders
-const TEXT         = '#ffffff'; // pure white – headings and primary text
-const BODY         = '#cbd5e1'; // slate-300 – body/paragraph (readable)
-const MUTED        = '#94a3b8'; // slate-400 – secondary
-const DIM          = '#94a3b8'; // same as MUTED – disclaimer text (readable)
-const FOOT         = '#64748b'; // slate-500 – footer
+const BG           = '#f5f0e8';
+const CARD         = '#ffffff';
+const INNER        = '#f0ebe3';
+const BORDER       = '#000000';
+const TEXT         = '#0a0a0a';
+const BODY         = '#333333';
+const MUTED        = '#666666';
+const DIM          = '#666666';
+const FOOT         = '#666666';
 
-const GRADIENT_START = '#3b82f6';
-const GRADIENT_END   = '#22c55e';
+const GRADIENT_START = '#38bdf8';
+const GRADIENT_END   = '#6366f1';
 
-function emailLayout(content: string): string {
+function emailLayout(content: string, logoUrl: string): string {
   const year = new Date().getFullYear();
-  const imgSrc = `cid:${ICON_CID}`;
+  const imgSrc = logoUrl;
   return `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="color-scheme" content="dark only"/>
-<meta name="supported-color-schemes" content="dark only"/>
+<meta name="color-scheme" content="light"/>
+<meta name="supported-color-schemes" content="light"/>
 <title>Boardify</title>
 <!--[if mso]><style>body,table,td,div,p,span{background-color:${BG}!important;color:${TEXT}!important;font-family:Arial,sans-serif!important;}</style><![endif]-->
 <style>
-:root{color-scheme:dark only;}
-u+.body .gmail-blend-screen{background:#000!important;mix-blend-mode:screen;}
-u+.body .gmail-blend-difference{background:#000!important;mix-blend-mode:difference;}
-.mbp-brand{background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END})!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;background-clip:text!important;color:${GRADIENT_START}!important;}
+:root{color-scheme:light;}
+.boardify-brand{background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END})!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;background-clip:text!important;color:${GRADIENT_START}!important;}
 </style>
 </head>
 <body class="body" bgcolor="${BG}" style="margin:0;padding:0;${bg(BG)};font-family:${F};color:${TEXT};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
@@ -260,14 +252,14 @@ u+.body .gmail-blend-difference{background:#000!important;mix-blend-mode:differe
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="${bg(BG)};">
 <tr><td align="center" bgcolor="${BG}" style="padding:48px 20px 32px;${bg(BG)};">
 
-  <!-- Logo -->
+  <!-- Logo (same asset as app: icon_circle) -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="${bg(BG)};"><tr>
-    <td align="center" bgcolor="${BG}" style="padding-bottom:8px;${bg(BG)};">
-      <img src="${imgSrc}" alt="Boardify" width="52" height="52" style="display:block;width:52px;height:52px;border-radius:26px;border:0;"/>
+    <td align="center" bgcolor="${BG}" style="padding-bottom:10px;${bg(BG)};">
+      <img src="${imgSrc}" alt="Boardify" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:16px;border:2px solid ${BORDER};" />
     </td>
   </tr><tr>
-    <td align="center" bgcolor="${BG}" style="padding-bottom:32px;font-family:${F};font-size:17px;font-weight:700;letter-spacing:0.5px;${bg(BG)};">
-      <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span class="mbp-brand" style="color:#ffffff;background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Boardify</span></div></div>
+    <td align="center" bgcolor="${BG}" style="padding-bottom:28px;font-family:${F};font-size:18px;font-weight:800;letter-spacing:-0.2px;${bg(BG)};">
+      <span class="boardify-brand" style="background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:${GRADIENT_START};">Boardify</span>
     </td>
   </tr></table>
 
@@ -278,8 +270,8 @@ u+.body .gmail-blend-difference{background:#000!important;mix-blend-mode:differe
   </tr>
   </table>
 
-  <!-- Card -->
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="max-width:460px;width:100%;${bg(CARD)};border:1px solid ${BORDER};border-top:0;border-radius:0 0 12px 12px;">
+  <!-- Card (neu-style: white face + black border like in-app sheets) -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="max-width:460px;width:100%;${bg(CARD)};border:2px solid ${BORDER};border-top:0;border-radius:0 0 14px 14px;">
   <tr><td bgcolor="${CARD}" style="padding:36px 32px 32px;${bg(CARD)};">
     ${content}
   </td></tr>
@@ -299,18 +291,18 @@ u+.body .gmail-blend-difference{background:#000!important;mix-blend-mode:differe
 </html>`;
 }
 
-export function passwordResetEmailHtml(code: string): string {
-  const INFO_BG     = '#13223e'; // solid equivalent of rgba(59,130,246,0.1) on CARD
-  const INFO_BORDER = '#182c53'; // solid equivalent of rgba(59,130,246,0.2) on CARD
+export function passwordResetEmailHtml(code: string, logoUrl: string): string {
+  const INFO_BG = '#e0f2fe';
+  const INFO_BORDER = '#7dd3fc';
 
   const digits = code.split('').map(d =>
-    `<td align="center" valign="middle" width="44" height="52" bgcolor="${INNER}" style="width:44px;height:52px;font-size:24px;font-weight:700;color:#e2e8f0;font-family:${MONO};${bg(INNER)};border:1px solid ${BORDER_INNER};border-radius:8px;letter-spacing:0;line-height:52px;">${d}</td>`
+    `<td align="center" valign="middle" width="44" height="52" bgcolor="${INNER}" style="width:44px;height:52px;font-size:24px;font-weight:700;color:${TEXT};font-family:${MONO};${bg(INNER)};border:2px solid ${BORDER};border-radius:8px;letter-spacing:0;line-height:52px;">${d}</td>`
   ).join('');
 
   return emailLayout(`
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;${bg(CARD)};">
-        <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span style="color:#ffffff;">Reset your password</span></div></div>
+      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;color:${TEXT};${bg(CARD)};">
+        Reset your password
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:15px;line-height:1.65;color:${BODY};padding-bottom:28px;${bg(CARD)};">
         Enter this verification code in the app to continue.
@@ -324,51 +316,53 @@ export function passwordResetEmailHtml(code: string): string {
         <span style="font-family:${MONO};font-size:13px;color:${DIM};letter-spacing:2px;-webkit-user-select:all;user-select:all;">${code}</span>
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:28px;${bg(CARD)};">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${INFO_BG}" style="${bg(INFO_BG)};border:1px solid ${INFO_BORDER};border-radius:8px;">
-          <tr><td bgcolor="${INFO_BG}" style="padding:10px 20px;font-family:${F};font-size:13px;color:#60a5fa;text-align:center;${bg(INFO_BG)};">
-            &#9201; This code expires in <strong style="color:#60a5fa;">15 minutes</strong>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${INFO_BG}" style="${bg(INFO_BG)};border:2px solid ${INFO_BORDER};border-radius:8px;">
+          <tr><td bgcolor="${INFO_BG}" style="padding:10px 20px;font-family:${F};font-size:13px;color:#0369a1;text-align:center;${bg(INFO_BG)};">
+            &#9201; This code expires in <strong style="color:#0369a1;">15 minutes</strong>
           </td></tr>
         </table>
       </td></tr>
       <tr><td bgcolor="${CARD}" style="border-top:1px solid ${BORDER};padding-top:20px;${bg(CARD)};" align="center">
         <span style="font-family:${F};color:${DIM};font-size:13px;line-height:1.55;">If you didn&rsquo;t request this, you can safely ignore this email.</span>
       </td></tr>
-    </table>`);
+    </table>`,
+    logoUrl
+  );
 }
 
-export function accountDeletionEmailHtml(deleteUrl: string): string {
-  const WARN_ICON_BG = '#371520';
-  const WARN_BOX_BG  = '#2a1215';
-  const WARN_BORDER  = '#5c1d24';
+export function accountDeletionEmailHtml(deleteUrl: string, logoUrl: string): string {
+  const WARN_ICON_BG = '#fef2f2';
+  const WARN_BOX_BG = '#fef2f2';
+  const WARN_BORDER = '#fecaca';
 
   return emailLayout(`
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
       <!-- Warning icon -->
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:16px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${WARN_ICON_BG}" style="width:56px;height:56px;border-radius:28px;${bg(WARN_ICON_BG)};font-size:28px;line-height:56px;">
+          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${WARN_ICON_BG}" style="width:56px;height:56px;border-radius:28px;border:2px solid ${BORDER};${bg(WARN_ICON_BG)};font-size:28px;line-height:56px;">
             &#9888;&#65039;
           </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;${bg(CARD)};">
-        <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span style="color:#ffffff;">Delete your account</span></div></div>
+      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;color:${TEXT};${bg(CARD)};">
+        Delete your account
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:15px;line-height:1.65;color:${BODY};padding-bottom:24px;${bg(CARD)};">
         You requested to permanently delete your Boardify account and all associated data.
       </td></tr>
 
       <!-- What will be deleted -->
-      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#60a5fa;padding-bottom:10px;${bg(CARD)};">
+      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${GRADIENT_END};padding-bottom:10px;${bg(CARD)};">
         What will be deleted
       </td></tr>
       <tr><td bgcolor="${CARD}" style="padding:0 0 28px;${bg(CARD)};">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${INNER}" style="${bg(INNER)};border:1px solid ${BORDER_INNER};border-radius:10px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${INNER}" style="${bg(INNER)};border:2px solid ${BORDER};border-radius:10px;">
           <tr><td bgcolor="${INNER}" style="padding:18px 22px;font-family:${F};font-size:14px;line-height:2.1;color:${BODY};${bg(INNER)};">
-            <span style="color:#f87171;">&#10005;</span>&ensp;Your profile and account data<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Boards you own and shared access<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Lists, cards, and board content<br/>
-            <span style="color:#f87171;">&#10005;</span>&ensp;Preferences and notification settings
+            <span style="color:#b91c1c;">&#10005;</span>&ensp;Your profile and account data<br/>
+            <span style="color:#b91c1c;">&#10005;</span>&ensp;Boards you own and shared access<br/>
+            <span style="color:#b91c1c;">&#10005;</span>&ensp;Lists, cards, and board content<br/>
+            <span style="color:#b91c1c;">&#10005;</span>&ensp;Preferences and notification settings
           </td></tr>
         </table>
       </td></tr>
@@ -376,7 +370,7 @@ export function accountDeletionEmailHtml(deleteUrl: string): string {
       <!-- CTA button -->
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:16px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" bgcolor="#dc2626" style="${bg('#dc2626')};border-radius:8px;">
+          <tr><td align="center" bgcolor="#b91c1c" style="${bg('#b91c1c')};border:2px solid ${BORDER};border-radius:8px;">
             <a href="${deleteUrl}" target="_blank" style="display:inline-block;padding:14px 36px;color:#ffffff;font-family:${F};font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.2px;">Delete My Account</a>
           </td></tr>
         </table>
@@ -384,9 +378,9 @@ export function accountDeletionEmailHtml(deleteUrl: string): string {
 
       <!-- Permanent warning -->
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:28px;${bg(CARD)};">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${WARN_BOX_BG}" style="${bg(WARN_BOX_BG)};border:1px solid ${WARN_BORDER};border-radius:8px;">
-          <tr><td bgcolor="${WARN_BOX_BG}" style="padding:12px 22px;font-family:${F};font-size:13px;color:#fca5a5;text-align:center;line-height:1.55;font-weight:500;${bg(WARN_BOX_BG)};">
-            &#9888; This action is <strong style="color:#f87171;">permanent</strong> and cannot be undone.
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${WARN_BOX_BG}" style="${bg(WARN_BOX_BG)};border:2px solid ${WARN_BORDER};border-radius:8px;">
+          <tr><td bgcolor="${WARN_BOX_BG}" style="padding:12px 22px;font-family:${F};font-size:13px;color:#991b1b;text-align:center;line-height:1.55;font-weight:500;${bg(WARN_BOX_BG)};">
+            &#9888; This action is <strong style="color:#b91c1c;">permanent</strong> and cannot be undone.
           </td></tr>
         </table>
       </td></tr>
@@ -394,30 +388,32 @@ export function accountDeletionEmailHtml(deleteUrl: string): string {
       <tr><td bgcolor="${CARD}" style="border-top:1px solid ${BORDER};padding-top:20px;${bg(CARD)};" align="center">
         <span style="font-family:${F};color:${DIM};font-size:13px;line-height:1.55;">This link expires in 1 hour. If you didn&rsquo;t request this, ignore this email.</span>
       </td></tr>
-    </table>`);
+    </table>`,
+    logoUrl
+  );
 }
 
-export function emailVerificationHtml(verifyUrl: string): string {
-  const CHECK_BG = '#123132'; // solid equivalent of rgba(34,197,94,0.15) on CARD
+export function emailVerificationHtml(verifyUrl: string, logoUrl: string): string {
+  const CHECK_BG = '#e0f2fe';
 
   return emailLayout(`
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:16px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${CHECK_BG}" style="width:56px;height:56px;border-radius:28px;${bg(CHECK_BG)};font-size:28px;line-height:56px;">
+          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${CHECK_BG}" style="width:56px;height:56px;border-radius:28px;border:2px solid ${BORDER};${bg(CHECK_BG)};font-size:28px;line-height:56px;">
             &#9989;
           </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;${bg(CARD)};">
-        <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span style="color:#ffffff;">Verify your email</span></div></div>
+      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;color:${TEXT};${bg(CARD)};">
+        Verify your email
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:15px;line-height:1.65;color:${BODY};padding-bottom:24px;${bg(CARD)};">
         You signed up for Boardify. Click the button below to verify your email and get started.
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:28px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" style="background:linear-gradient(90deg,#22c55e,#10b981);border-radius:8px;">
+          <tr><td align="center" style="background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END});border:2px solid ${BORDER};border-radius:8px;">
             <a href="${verifyUrl}" target="_blank" style="display:inline-block;padding:14px 36px;color:#ffffff;font-family:${F};font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.2px;">Verify Email</a>
           </td></tr>
         </table>
@@ -425,30 +421,32 @@ export function emailVerificationHtml(verifyUrl: string): string {
       <tr><td bgcolor="${CARD}" style="border-top:1px solid ${BORDER};padding-top:20px;${bg(CARD)};" align="center">
         <span style="font-family:${F};color:${DIM};font-size:13px;line-height:1.55;">If you didn&rsquo;t create an account, you can safely ignore this email.</span>
       </td></tr>
-    </table>`);
+    </table>`,
+    logoUrl
+  );
 }
 
-export function parentalConsentEmailHtml(confirmUrl: string): string {
-  const CHECK_BG = '#123132'; // solid equivalent of rgba(34,197,94,0.15) on CARD
+export function parentalConsentEmailHtml(confirmUrl: string, logoUrl: string): string {
+  const CHECK_BG = '#ede9fe';
 
   return emailLayout(`
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:16px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${CHECK_BG}" style="width:56px;height:56px;border-radius:28px;${bg(CHECK_BG)};font-size:28px;line-height:56px;">
+          <tr><td align="center" valign="middle" width="56" height="56" bgcolor="${CHECK_BG}" style="width:56px;height:56px;border-radius:28px;border:2px solid ${BORDER};${bg(CHECK_BG)};font-size:28px;line-height:56px;">
             &#128105;&#8205;&#128102;
           </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;${bg(CARD)};">
-        <div class="gmail-blend-screen" style="display:inline-block;"><div class="gmail-blend-difference" style="display:inline-block;"><span style="color:#ffffff;">Parent or guardian consent</span></div></div>
+      <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:24px;font-weight:800;padding-bottom:10px;letter-spacing:-0.3px;color:${TEXT};${bg(CARD)};">
+        Parent or guardian consent
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="font-family:${F};font-size:15px;line-height:1.65;color:${BODY};padding-bottom:24px;${bg(CARD)};">
         A child in your care has signed up for Boardify and needs your permission to use the app. By clicking below, you agree to our Terms of Service and Privacy Policy on their behalf and confirm you are their parent or legal guardian.
       </td></tr>
       <tr><td align="center" bgcolor="${CARD}" style="padding-bottom:28px;${bg(CARD)};">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD}" style="${bg(CARD)};">
-          <tr><td align="center" style="background:linear-gradient(90deg,#22c55e,#10b981);border-radius:8px;">
+          <tr><td align="center" style="background:linear-gradient(90deg,${GRADIENT_START},${GRADIENT_END});border:2px solid ${BORDER};border-radius:8px;">
             <a href="${confirmUrl}" target="_blank" style="display:inline-block;padding:14px 36px;color:#ffffff;font-family:${F};font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.2px;">I agree &mdash; allow my child to use the app</a>
           </td></tr>
         </table>
@@ -456,5 +454,7 @@ export function parentalConsentEmailHtml(confirmUrl: string): string {
       <tr><td bgcolor="${CARD}" style="border-top:1px solid ${BORDER};padding-top:20px;${bg(CARD)};" align="center">
         <span style="font-family:${F};color:${DIM};font-size:13px;line-height:1.55;">This link expires in 7 days. If you didn&rsquo;t expect this, you can ignore this email.</span>
       </td></tr>
-    </table>`);
+    </table>`,
+    logoUrl
+  );
 }
