@@ -11,6 +11,8 @@ import {
   aggregateDashboardSeries,
 } from '../../board/dashboardAggregations';
 import { DashboardStatCard } from './DashboardStatCard';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme/colors';
 
 const EDGE_PAD_H = Platform.select({ web: 24, default: 16 }) ?? 16;
 const CARD_SHIFT = 5;
@@ -28,6 +30,8 @@ export function BoardDashboardView({
   bottomClearance,
   onRemoveTile,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBoardDashboardStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
 
   const openAddTile = useCallback(() => {
@@ -100,7 +104,7 @@ export function BoardDashboardView({
             accessibilityRole="button"
             accessibilityLabel="Add statistic tile"
           >
-            <Feather name="plus" size={18} color="#0a0a0a" />
+            <Feather name="plus" size={18} color={colors.primaryButtonText} />
             <Text style={styles.addBtnText}>Add</Text>
           </Pressable>
         </View>
@@ -145,98 +149,100 @@ export function BoardDashboardView({
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: 8,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
-  },
-  addBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 16,
-  },
-  emptyWrapOuter: {
-    position: 'relative',
-    alignSelf: 'stretch',
-    marginBottom: CARD_SHIFT,
-    marginRight: CARD_SHIFT,
-  },
-  emptyShadow: {
-    position: 'absolute',
-    left: CARD_SHIFT,
-    top: CARD_SHIFT,
-    right: -CARD_SHIFT,
-    bottom: -CARD_SHIFT,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  emptyFace: {
-    position: 'relative',
-    zIndex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    padding: 20,
-    alignItems: 'flex-start',
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    marginBottom: 6,
-  },
-  emptyHint: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  emptyCta: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: '#0a0a0a',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  emptyCtaText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});
+function createBoardDashboardStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingTop: 8,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    pageTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    addBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.primaryButtonBg,
+    },
+    addBtnText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.primaryButtonText,
+    },
+    subtitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 16,
+    },
+    emptyWrapOuter: {
+      position: 'relative',
+      alignSelf: 'stretch',
+      marginBottom: CARD_SHIFT,
+      marginRight: CARD_SHIFT,
+    },
+    emptyShadow: {
+      position: 'absolute',
+      left: CARD_SHIFT,
+      top: CARD_SHIFT,
+      right: -CARD_SHIFT,
+      bottom: -CARD_SHIFT,
+      backgroundColor: colors.shadowFillColumn,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyFace: {
+      position: 'relative',
+      zIndex: 1,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 20,
+      alignItems: 'flex-start',
+    },
+    emptyTitle: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 6,
+    },
+    emptyHint: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      lineHeight: 20,
+      marginBottom: 14,
+    },
+    emptyCta: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primaryButtonBg,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyCtaText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.primaryButtonText,
+    },
+  });
+}

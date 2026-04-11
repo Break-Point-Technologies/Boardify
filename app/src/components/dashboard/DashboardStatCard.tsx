@@ -1,4 +1,4 @@
-import React, { useState, type ReactNode } from 'react';
+import React, { useMemo, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import {
 import { DashboardBarChart, minWidthForBarChart } from './DashboardBarChart';
 import { DashboardPieChart } from './DashboardPieChart';
 import { DashboardLineChart, minWidthForLineChart } from './DashboardLineChart';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme/colors';
 
 const CARD_SHIFT = 5;
 
@@ -45,6 +47,8 @@ export function DashboardStatCard({
   lineTimeframe,
   onRemove,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createDashboardStatCardStyles(colors), [colors]);
   const [chartW, setChartW] = useState(280);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -110,7 +114,7 @@ export function DashboardStatCard({
                 style={styles.menuBtn}
                 accessibilityLabel="Tile options"
               >
-                <Feather name="more-horizontal" size={20} color="#333" />
+                <Feather name="more-horizontal" size={20} color={colors.iconPrimary} />
               </Pressable>
             }
           />
@@ -136,63 +140,65 @@ export function DashboardStatCard({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapOuter: {
-    position: 'relative',
-    alignSelf: 'stretch',
-    marginBottom: CARD_SHIFT + 8,
-    marginRight: CARD_SHIFT,
-  },
-  shadow: {
-    position: 'absolute',
-    left: CARD_SHIFT,
-    top: CARD_SHIFT,
-    right: -CARD_SHIFT,
-    bottom: -CARD_SHIFT,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  face: {
-    position: 'relative',
-    zIndex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#000',
-    backgroundColor: '#e8e8e8',
-    gap: 8,
-  },
-  title: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    letterSpacing: 0.2,
-  },
-  menuBtn: {
-    padding: 4,
-    ...Platform.select({ web: { cursor: 'pointer' as const }, default: {} }),
-  },
-  chartPad: {
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-  },
-  chartHScroll: {
-    flexGrow: 0,
-  },
-  chartHScrollContent: {
-    paddingRight: 10,
-  },
-});
+function createDashboardStatCardStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    wrapOuter: {
+      position: 'relative',
+      alignSelf: 'stretch',
+      marginBottom: CARD_SHIFT + 8,
+      marginRight: CARD_SHIFT,
+    },
+    shadow: {
+      position: 'absolute',
+      left: CARD_SHIFT,
+      top: CARD_SHIFT,
+      right: -CARD_SHIFT,
+      bottom: -CARD_SHIFT,
+      backgroundColor: colors.shadowFillColumn,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    face: {
+      position: 'relative',
+      zIndex: 1,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.tableHeaderBg,
+      gap: 8,
+    },
+    title: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      letterSpacing: 0.2,
+    },
+    menuBtn: {
+      padding: 4,
+      ...Platform.select({ web: { cursor: 'pointer' as const }, default: {} }),
+    },
+    chartPad: {
+      paddingHorizontal: 12,
+      paddingVertical: 14,
+      backgroundColor: colors.surfaceElevated,
+    },
+    chartHScroll: {
+      flexGrow: 0,
+    },
+    chartHScrollContent: {
+      paddingRight: 10,
+    },
+  });
+}

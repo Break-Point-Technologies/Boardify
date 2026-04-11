@@ -21,6 +21,8 @@ import {
   monthTitle,
 } from '../utils/calendarGrid';
 import type { BoardCardData, BoardColumnData } from '../types/board';
+import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme/colors';
 
 export type CalendarTaskOpenLayout = {
   x: number;
@@ -58,6 +60,8 @@ function weekdayShortLabels(): string[] {
 const WEEKDAY_LABELS = weekdayShortLabels();
 
 export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBoardCalendarStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { width: windowW } = useWindowDimensions();
   const taskRowHostRefs = useRef<Record<string, View | null>>({});
@@ -187,7 +191,7 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
               accessibilityRole="button"
               accessibilityLabel="Previous month"
             >
-              <Feather name="chevron-left" size={22} color="#0a0a0a" />
+              <Feather name="chevron-left" size={22} color={colors.iconPrimary} />
             </Pressable>
             <Text style={styles.monthTitle} numberOfLines={1}>
               {monthTitle(visibleMonth)}
@@ -208,7 +212,7 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
                 accessibilityRole="button"
                 accessibilityLabel="Next month"
               >
-                <Feather name="chevron-right" size={22} color="#0a0a0a" />
+                <Feather name="chevron-right" size={22} color={colors.iconPrimary} />
               </Pressable>
             </View>
           </View>
@@ -299,7 +303,7 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
                           styles.taskStripe,
                           {
                             backgroundColor:
-                              card.labelColor ?? card.labels?.[0]?.color ?? '#e5e5e5',
+                              card.labelColor ?? card.labels?.[0]?.color ?? colors.divider,
                           },
                         ]}
                       />
@@ -312,7 +316,7 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
                         </Text>
                       </View>
                       <View style={styles.taskChevronWrap}>
-                        <Feather name="chevron-right" size={18} color="#999" />
+                        <Feather name="chevron-right" size={18} color={colors.iconMuted} />
                       </View>
                     </View>
                   </Pressable>
@@ -326,244 +330,246 @@ export function BoardCalendarView({ columns, bottomClearance, onOpenTask }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: 8,
-  },
-  emptyBanner: {
-    marginBottom: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  emptyBannerTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    marginBottom: 4,
-  },
-  emptyBannerHint: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
-    lineHeight: 18,
-  },
-  wrapOuter: {
-    position: 'relative',
-    width: '100%',
-    marginBottom: CAL_SHIFT,
-  },
-  shadow: {
-    position: 'absolute',
-    left: CAL_SHIFT,
-    top: CAL_SHIFT,
-    right: -CAL_SHIFT,
-    bottom: -CAL_SHIFT,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  face: {
-    position: 'relative',
-    zIndex: 1,
-    alignSelf: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    overflow: 'hidden',
-  },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#000',
-    backgroundColor: '#e8e8e8',
-    gap: 6,
-  },
-  monthNavBtn: {
-    padding: 4,
-  },
-  monthTitle: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    textAlign: 'center',
-  },
-  monthHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  todayBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
-  },
-  todayBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
-    backgroundColor: '#f5f5f5',
-  },
-  weekdayCell: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  weekdayText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#444',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  gridRow: {
-    flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
-  },
-  dayCell: {
-    flex: 1,
-    minHeight: 52,
-    paddingVertical: 6,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: '#f0f0f0',
-    position: 'relative',
-  },
-  dayCellToday: {
-    backgroundColor: '#f7f4ee',
-  },
-  dayCellSelectedWrap: {
-    backgroundColor: '#fffef5',
-    zIndex: 2,
-    elevation: 3,
-  },
-  dayCellSelectionRing: {
-    position: 'absolute',
-    top: 3,
-    left: 2,
-    right: 2,
-    bottom: 3,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 4,
-  },
-  dayNum: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  dayNumToday: {
-    fontWeight: '800',
-    color: '#0a0a0a',
-  },
-  dotsRow: {
-    minHeight: 14,
-    marginTop: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#0a0a0a',
-  },
-  countBadge: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#0a0a0a',
-  },
-  agendaSection: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#000',
-    backgroundColor: '#fafafa',
-  },
-  agendaTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#444',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  agendaEmpty: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    paddingVertical: 8,
-  },
-  taskRowOuter: {
-    marginBottom: 8,
-  },
-  taskRow: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#000',
-    overflow: 'hidden',
-  },
-  taskRowPressed: {
-    opacity: 0.88,
-  },
-  taskRowInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 48,
-  },
-  taskStripe: {
-    width: 4,
-    alignSelf: 'stretch',
-    minHeight: 48,
-  },
-  taskBody: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingLeft: 8,
-    paddingRight: 10,
-    minWidth: 0,
-  },
-  taskChevronWrap: {
-    alignSelf: 'stretch',
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  taskTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  taskMeta: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 2,
-  },
-});
+function createBoardCalendarStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingTop: 8,
+    },
+    emptyBanner: {
+      marginBottom: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyBannerTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    emptyBannerHint: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    wrapOuter: {
+      position: 'relative',
+      width: '100%',
+      marginBottom: CAL_SHIFT,
+    },
+    shadow: {
+      position: 'absolute',
+      left: CAL_SHIFT,
+      top: CAL_SHIFT,
+      right: -CAL_SHIFT,
+      bottom: -CAL_SHIFT,
+      backgroundColor: colors.shadowFillColumn,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    face: {
+      position: 'relative',
+      zIndex: 1,
+      alignSelf: 'center',
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    monthHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.tableHeaderBg,
+      gap: 6,
+    },
+    monthNavBtn: {
+      padding: 4,
+    },
+    monthTitle: {
+      flex: 1,
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    monthHeaderRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    todayBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceElevated,
+    },
+    todayBtnText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    weekdayRow: {
+      flexDirection: 'row',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+      backgroundColor: colors.surfaceMuted,
+    },
+    weekdayCell: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+    },
+    weekdayText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.sectionLabel,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    gridRow: {
+      flexDirection: 'row',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.calendarGridLine,
+    },
+    dayCell: {
+      flex: 1,
+      minHeight: 52,
+      paddingVertical: 6,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: colors.calendarGridLine,
+      position: 'relative',
+    },
+    dayCellToday: {
+      backgroundColor: colors.tableRowAlt,
+    },
+    dayCellSelectedWrap: {
+      backgroundColor: colors.cardFaceOnColumn,
+      zIndex: 2,
+      elevation: 3,
+    },
+    dayCellSelectionRing: {
+      position: 'absolute',
+      top: 3,
+      left: 2,
+      right: 2,
+      bottom: 3,
+      borderWidth: 2,
+      borderColor: colors.textPrimary,
+      borderRadius: 4,
+    },
+    dayNum: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    dayNumToday: {
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    dotsRow: {
+      minHeight: 14,
+      marginTop: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.textPrimary,
+    },
+    countBadge: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    agendaSection: {
+      paddingHorizontal: 12,
+      paddingTop: 14,
+      paddingBottom: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surfaceMuted,
+    },
+    agendaTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.sectionLabel,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 10,
+    },
+    agendaEmpty: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.textTertiary,
+      paddingVertical: 8,
+    },
+    taskRowOuter: {
+      marginBottom: 8,
+    },
+    taskRow: {
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    taskRowPressed: {
+      opacity: 0.88,
+    },
+    taskRowInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 48,
+    },
+    taskStripe: {
+      width: 4,
+      alignSelf: 'stretch',
+      minHeight: 48,
+    },
+    taskBody: {
+      flex: 1,
+      paddingVertical: 10,
+      paddingLeft: 8,
+      paddingRight: 10,
+      minWidth: 0,
+    },
+    taskChevronWrap: {
+      alignSelf: 'stretch',
+      width: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    taskTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    taskMeta: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+  });
+}

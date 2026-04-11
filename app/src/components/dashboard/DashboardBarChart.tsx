@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { DashboardSeriesRow } from '../../types/dashboard';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme/colors';
 
 const CHART_H = 156;
 const PAD_L = 34;
@@ -40,6 +42,8 @@ type Props = {
 };
 
 export function DashboardBarChart({ rows, width }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBarChartStyles(colors), [colors]);
   const innerW = Math.max(1, width - PAD_L - PAD_R);
   const plotH = CHART_H - PAD_T - PAD_B;
   const maxVal = useMemo(
@@ -73,7 +77,7 @@ export function DashboardBarChart({ rows, width }: Props) {
                 y1={y}
                 x2={width - PAD_R}
                 y2={y}
-                stroke="#e0e0e0"
+                stroke={colors.chartGrid}
                 strokeWidth={1}
                 strokeDasharray="4 4"
               />
@@ -81,7 +85,7 @@ export function DashboardBarChart({ rows, width }: Props) {
                 x={PAD_L - 4}
                 y={y + 3}
                 fontSize={9}
-                fill="#666"
+                fill={colors.chartAxis}
                 fontWeight="600"
                 textAnchor="end"
               >
@@ -95,7 +99,7 @@ export function DashboardBarChart({ rows, width }: Props) {
           const xCenter = PAD_L + slotW * i + slotW / 2;
           const x = xCenter - barW / 2;
           const y = PAD_T + plotH - h;
-          const fill = row.color ?? '#0a0a0a';
+          const fill = row.color ?? colors.textPrimary;
           return (
             <Rect
               key={row.id}
@@ -104,7 +108,7 @@ export function DashboardBarChart({ rows, width }: Props) {
               width={barW}
               height={Math.max(h, 0)}
               fill={fill}
-              stroke="#000"
+              stroke={colors.border}
               strokeWidth={1}
               rx={2}
             />
@@ -124,32 +128,34 @@ export function DashboardBarChart({ rows, width }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  empty: {
-    height: CHART_H + X_LABEL_MIN_H,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: '600',
-  },
-  xLabels: {
-    flexDirection: 'row',
-    minHeight: X_LABEL_MIN_H,
-    marginTop: 4,
-  },
-  xLabCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 2,
-  },
-  xLabText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#444',
-    textAlign: 'center',
-    lineHeight: 11,
-  },
-});
+function createBarChartStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    empty: {
+      height: CHART_H + X_LABEL_MIN_H,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 13,
+      color: colors.textTertiary,
+      fontWeight: '600',
+    },
+    xLabels: {
+      flexDirection: 'row',
+      minHeight: X_LABEL_MIN_H,
+      marginTop: 4,
+    },
+    xLabCell: {
+      flex: 1,
+      alignItems: 'center',
+      paddingHorizontal: 2,
+    },
+    xLabText: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 11,
+    },
+  });
+}

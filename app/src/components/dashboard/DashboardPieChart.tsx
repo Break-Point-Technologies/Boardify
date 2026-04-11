@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { DashboardSeriesRow } from '../../types/dashboard';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme/colors';
 
 const SIZE = 140;
 const CX = SIZE / 2;
@@ -38,6 +40,8 @@ type Props = {
 };
 
 export function DashboardPieChart({ rows }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createPieChartStyles(colors), [colors]);
   const { paths, legend, fullCircle } = useMemo(() => {
     const positive = rows.filter((r) => r.value > 0);
     const total = positive.reduce((s, r) => s + r.value, 0);
@@ -91,12 +95,12 @@ export function DashboardPieChart({ rows }: Props) {
             cy={CY}
             r={R}
             fill={fullCircle.color}
-            stroke="#000"
+            stroke={colors.border}
             strokeWidth={1}
           />
         ) : (
           paths.map((p) => (
-            <Path key={p.key} d={p.d} fill={p.color} stroke="#000" strokeWidth={1} />
+            <Path key={p.key} d={p.d} fill={p.color} stroke={colors.border} strokeWidth={1} />
           ))
         )}
       </Svg>
@@ -118,52 +122,54 @@ export function DashboardPieChart({ rows }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  empty: {
-    height: SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: '600',
-  },
-  legend: {
-    flex: 1,
-    minWidth: 120,
-    gap: 6,
-    paddingTop: 4,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  swatch: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  legendLabel: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-  },
-  legendVal: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    minWidth: 24,
-    textAlign: 'right',
-  },
-});
+function createPieChartStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      flexWrap: 'wrap',
+    },
+    empty: {
+      height: SIZE,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 13,
+      color: colors.textTertiary,
+      fontWeight: '600',
+    },
+    legend: {
+      flex: 1,
+      minWidth: 120,
+      gap: 6,
+      paddingTop: 4,
+    },
+    legendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    swatch: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    legendLabel: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    legendVal: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      minWidth: 24,
+      textAlign: 'right',
+    },
+  });
+}

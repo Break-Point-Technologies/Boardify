@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Svg, { G, Line, Circle, Polyline, Text as SvgText } from 'react-native-svg';
 import type { DashboardLineChartData } from '../../types/dashboard';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme/colors';
 
 const CHART_H = 156;
 const PAD_L = 34;
@@ -45,6 +47,8 @@ type Props = {
 };
 
 export function DashboardLineChart({ data, width }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createLineChartStyles(colors), [colors]);
   const { xLabels, series } = data;
   const innerW = Math.max(1, width - PAD_L - PAD_R);
   const plotInnerW = Math.max(1, innerW - PLOT_INSET_X * 2);
@@ -91,7 +95,7 @@ export function DashboardLineChart({ data, width }: Props) {
                 y1={y}
                 x2={width - PAD_R}
                 y2={y}
-                stroke="#e0e0e0"
+                stroke={colors.chartGrid}
                 strokeWidth={1}
                 strokeDasharray="4 4"
               />
@@ -99,7 +103,7 @@ export function DashboardLineChart({ data, width }: Props) {
                 x={PAD_L - 4}
                 y={y + 3}
                 fontSize={9}
-                fill="#666"
+                fill={colors.chartAxis}
                 fontWeight="600"
                 textAnchor="end"
               >
@@ -117,7 +121,7 @@ export function DashboardLineChart({ data, width }: Props) {
               <Polyline
                 points={pts}
                 fill="none"
-                stroke={s.color ?? '#0a0a0a'}
+                stroke={s.color ?? colors.textPrimary}
                 strokeWidth={2}
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -128,8 +132,8 @@ export function DashboardLineChart({ data, width }: Props) {
                   cx={xAt(i)}
                   cy={yAt(v)}
                   r={3}
-                  fill="#fff"
-                  stroke={s.color ?? '#0a0a0a'}
+                  fill={colors.surfaceElevated}
+                  stroke={s.color ?? colors.textPrimary}
                   strokeWidth={1.5}
                 />
               ))}
@@ -157,7 +161,7 @@ export function DashboardLineChart({ data, width }: Props) {
         >
           {series.map((s) => (
             <View key={`leg-${s.id}`} style={styles.legendItem}>
-              <View style={[styles.legendSwatch, { backgroundColor: s.color ?? '#0a0a0a' }]} />
+              <View style={[styles.legendSwatch, { backgroundColor: s.color ?? colors.textPrimary }]} />
               <Text style={styles.legendText} numberOfLines={1}>
                 {s.label}
               </Text>
@@ -169,60 +173,62 @@ export function DashboardLineChart({ data, width }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  empty: {
-    height: CHART_H + X_LABEL_ROW_H,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: '600',
-  },
-  xLabels: {
-    flexDirection: 'row',
-    minHeight: X_LABEL_ROW_H,
-    marginTop: 2,
-  },
-  xLabCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 0,
-  },
-  xLabText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#444',
-    textAlign: 'center',
-  },
-  legendScroll: {
-    maxHeight: LEGEND_H + 8,
-    marginTop: 6,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingRight: 8,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    maxWidth: 140,
-  },
-  legendSwatch: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  legendText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#444',
-    flexShrink: 1,
-  },
-});
+function createLineChartStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    empty: {
+      height: CHART_H + X_LABEL_ROW_H,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 13,
+      color: colors.textTertiary,
+      fontWeight: '600',
+    },
+    xLabels: {
+      flexDirection: 'row',
+      minHeight: X_LABEL_ROW_H,
+      marginTop: 2,
+    },
+    xLabCell: {
+      flex: 1,
+      alignItems: 'center',
+      paddingHorizontal: 0,
+    },
+    xLabText: {
+      fontSize: 8,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    legendScroll: {
+      maxHeight: LEGEND_H + 8,
+      marginTop: 6,
+    },
+    legendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingRight: 8,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      maxWidth: 140,
+    },
+    legendSwatch: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    legendText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      flexShrink: 1,
+    },
+  });
+}

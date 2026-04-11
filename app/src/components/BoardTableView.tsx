@@ -25,6 +25,8 @@ import {
   computeHoverInsertIndex,
   TABLE_ROW_SLOT_HEIGHT,
 } from '../board/boardDragUtils';
+import { useTheme } from '../theme';
+import type { ThemeColors } from '../theme/colors';
 
 const COL_WIDTHS = {
   check: 52,
@@ -41,8 +43,6 @@ const TABLE_INNER_WIDTH = Object.values(COL_WIDTHS).reduce((a, b) => a + b, 0);
 export const TABLE_MIN_WIDTH = TABLE_INNER_WIDTH + TABLE_ROW_PADDING_H * 2;
 const TABLE_SHIFT = 5;
 const TABLE_EDGE_PADDING_H = Platform.select({ web: 24, default: 26 }) ?? 26;
-const ICON_MUTED = '#666';
-const TEXT_PRIMARY = '#0a0a0a';
 const TABLE_ZOOM_MIN = 0.78;
 const TABLE_ZOOM_MAX = 1;
 
@@ -86,11 +86,14 @@ const TABLE_LABEL_PRESETS: TaskLabel[] = [
   { id: 'lbl-docs', name: 'Docs', color: '#bfdbfe' },
 ];
 
+/** Dark ink on pastel pill fills — must not follow theme textPrimary (light in dark mode). */
+const STATUS_PILL_LABEL = '#0a0a0a';
+
 function statusPillStyle(columnTitle: string): { bg: string; text: string } {
   const t = columnTitle.toLowerCase();
-  if (t.includes('progress')) return { bg: '#fde68a', text: TEXT_PRIMARY };
-  if (t.includes('done')) return { bg: '#bbf7d0', text: TEXT_PRIMARY };
-  return { bg: '#e5e5e5', text: TEXT_PRIMARY };
+  if (t.includes('progress')) return { bg: '#fde68a', text: STATUS_PILL_LABEL };
+  if (t.includes('done')) return { bg: '#bbf7d0', text: STATUS_PILL_LABEL };
+  return { bg: '#e5e5e5', text: STATUS_PILL_LABEL };
 }
 
 type Props = {
@@ -136,6 +139,8 @@ export function BoardTableView({
   rowDragEnabled = true,
   onSetCardLabels,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBoardTableStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const tableZoom = useSharedValue(1);
   const tableZoomStart = useSharedValue(1);
@@ -387,8 +392,8 @@ export function BoardTableView({
               {card.title}
             </Text>
             <View style={styles.nameIcons}>
-              <Feather name="zap" size={12} color={ICON_MUTED} />
-              <Feather name="message-circle" size={12} color={ICON_MUTED} />
+              <Feather name="zap" size={12} color={colors.iconMuted} />
+              <Feather name="message-circle" size={12} color={colors.iconMuted} />
             </View>
           </View>
         </Pressable>
@@ -480,7 +485,7 @@ export function BoardTableView({
             <Feather
               name={card.workTimerRunStartedAtMs != null ? 'pause-circle' : 'play-circle'}
               size={14}
-              color={ICON_MUTED}
+              color={colors.iconMuted}
             />
             <Text style={styles.timeText}>{formatTrackedTime(card)}</Text>
           </View>
@@ -557,7 +562,7 @@ export function BoardTableView({
               </View>
               <View style={[styles.thCell, styles.colStatus, styles.colAlignCenter]}>
                 <Text style={styles.thText} numberOfLines={1}>
-                  Status
+                  List
                 </Text>
               </View>
               <View style={[styles.thCell, styles.colLabels, styles.colAlignCenter]}>
@@ -624,7 +629,7 @@ export function BoardTableView({
                         hitSlop={10}
                         style={styles.groupAddBtn}
                       >
-                        <Feather name="plus" size={20} color="#333" />
+                        <Feather name="plus" size={20} color={colors.iconPrimary} />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -722,7 +727,7 @@ export function BoardTableView({
                 }}
                 style={styles.addListRow}
               >
-                <Feather name="plus" size={18} color="#666" />
+                <Feather name="plus" size={18} color={colors.iconMuted} />
                 <Text style={styles.addListRowText}>Add list</Text>
               </TouchableOpacity>
             ) : null}
@@ -736,268 +741,270 @@ export function BoardTableView({
   );
 }
 
-const styles = StyleSheet.create({
-  vertScroll: {
-    flex: 1,
-  },
-  vertScrollContent: {
-    flexGrow: 1,
-  },
-  hScrollFill: {
-    flex: 1,
-  },
-  hScrollContent: {
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  tableWrapOuter: {
-    position: 'relative',
-    alignSelf: 'flex-start',
-    marginBottom: TABLE_SHIFT,
-    marginRight: TABLE_SHIFT,
-  },
-  tableShadow: {
-    position: 'absolute',
-    left: TABLE_SHIFT,
-    top: TABLE_SHIFT,
-    right: -TABLE_SHIFT,
-    bottom: -TABLE_SHIFT,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  tableFace: {
-    position: 'relative',
-    zIndex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    overflow: 'hidden',
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    width: TABLE_MIN_WIDTH,
-    paddingVertical: 12,
-    paddingHorizontal: TABLE_ROW_PADDING_H,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#000',
-    backgroundColor: '#e8e8e8',
-  },
-  thCell: {
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  colAlignCenter: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusCellFrame: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  labelsMenuTrigger: {
-    width: '100%',
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-  },
-  checkboxPlaceholder: {
-    width: 16,
-    height: 16,
-  },
-  thText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#444',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    width: '100%',
-  },
-  colCheck: { width: COL_WIDTHS.check, flexShrink: 0 },
-  colName: { width: COL_WIDTHS.name, flexShrink: 0 },
-  colStatus: { width: COL_WIDTHS.status, flexShrink: 0 },
-  colLabels: { width: COL_WIDTHS.labels, flexShrink: 0 },
-  colAssignee: { width: COL_WIDTHS.owner, flexShrink: 0 },
-  colUpdated: { width: COL_WIDTHS.updated, flexShrink: 0 },
-  colTime: { width: COL_WIDTHS.time, flexShrink: 0 },
-  group: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    width: TABLE_MIN_WIDTH,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#f0ebe3',
-    gap: 10,
-  },
-  groupAccent: {
-    width: 4,
-    alignSelf: 'stretch',
-    minHeight: 18,
-    borderRadius: 2,
-    backgroundColor: '#0a0a0a',
-  },
-  groupTitlePressable: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
-  },
-  groupTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  groupCount: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
-  },
-  groupAddBtn: {
-    padding: 4,
-  },
-  dataRow: {
-    alignSelf: 'stretch',
-    width: TABLE_MIN_WIDTH,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
-    backgroundColor: '#fff',
-  },
-  dataRowDraggingGhost: {
-    opacity: 0.35,
-  },
-  dataRowMeasure: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    width: TABLE_MIN_WIDTH,
-    paddingVertical: 10,
-    paddingHorizontal: TABLE_ROW_PADDING_H,
-  },
-  td: {
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#000',
-    backgroundColor: '#fff',
-    flexShrink: 0,
-  },
-  nameCellHeader: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 0,
-  },
-  nameCell: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 0,
-  },
-  nameCellInner: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    gap: 6,
-  },
-  nameText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-    lineHeight: 18,
-    textAlign: 'center',
-    width: '100%',
-  },
-  nameIcons: {
-    flexDirection: 'row',
-    gap: 6,
-    flexShrink: 0,
-    justifyContent: 'center',
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    maxWidth: '100%',
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  statusPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    width: '100%',
-  },
-  dimText: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-  },
-  cellTextCentered: {
-    width: '100%',
-    textAlign: 'center',
-  },
-  avatarOrb: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#e0e0e0',
-    borderWidth: 1,
-    borderColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarOrbText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#333',
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  timeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444',
-    ...Platform.select({
-      ios: { fontVariant: ['tabular-nums' as const] },
-      default: {},
-    }),
-  },
-  addListRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 8,
-    width: TABLE_MIN_WIDTH,
-    alignSelf: 'stretch',
-    paddingVertical: 16,
-    paddingLeft: TABLE_ROW_PADDING_H + COL_WIDTHS.check,
-    paddingRight: TABLE_ROW_PADDING_H,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e8e8e8',
-  },
-  addListRowText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#666',
-  },
-});
+function createBoardTableStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    vertScroll: {
+      flex: 1,
+    },
+    vertScrollContent: {
+      flexGrow: 1,
+    },
+    hScrollFill: {
+      flex: 1,
+    },
+    hScrollContent: {
+      paddingTop: 8,
+      paddingBottom: 4,
+    },
+    tableWrapOuter: {
+      position: 'relative',
+      alignSelf: 'flex-start',
+      marginBottom: TABLE_SHIFT,
+      marginRight: TABLE_SHIFT,
+    },
+    tableShadow: {
+      position: 'absolute',
+      left: TABLE_SHIFT,
+      top: TABLE_SHIFT,
+      right: -TABLE_SHIFT,
+      bottom: -TABLE_SHIFT,
+      backgroundColor: colors.shadowFillColumn,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tableFace: {
+      position: 'relative',
+      zIndex: 1,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    tableHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      width: TABLE_MIN_WIDTH,
+      paddingVertical: 12,
+      paddingHorizontal: TABLE_ROW_PADDING_H,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.tableHeaderBg,
+    },
+    thCell: {
+      justifyContent: 'center',
+      minWidth: 0,
+    },
+    colAlignCenter: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statusCellFrame: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    labelsMenuTrigger: {
+      width: '100%',
+      paddingVertical: 4,
+      paddingHorizontal: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 36,
+    },
+    checkboxPlaceholder: {
+      width: 16,
+      height: 16,
+    },
+    thText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.sectionLabel,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      textAlign: 'center',
+      width: '100%',
+    },
+    colCheck: { width: COL_WIDTHS.check, flexShrink: 0 },
+    colName: { width: COL_WIDTHS.name, flexShrink: 0 },
+    colStatus: { width: COL_WIDTHS.status, flexShrink: 0 },
+    colLabels: { width: COL_WIDTHS.labels, flexShrink: 0 },
+    colAssignee: { width: COL_WIDTHS.owner, flexShrink: 0 },
+    colUpdated: { width: COL_WIDTHS.updated, flexShrink: 0 },
+    colTime: { width: COL_WIDTHS.time, flexShrink: 0 },
+    group: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+    },
+    groupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      width: TABLE_MIN_WIDTH,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      backgroundColor: colors.surfaceMuted,
+      gap: 10,
+    },
+    groupAccent: {
+      width: 4,
+      alignSelf: 'stretch',
+      minHeight: 18,
+      borderRadius: 2,
+      backgroundColor: colors.textPrimary,
+    },
+    groupTitlePressable: {
+      flex: 1,
+      minWidth: 0,
+      justifyContent: 'center',
+    },
+    groupTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    groupCount: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.textSecondary,
+    },
+    groupAddBtn: {
+      padding: 4,
+    },
+    dataRow: {
+      alignSelf: 'stretch',
+      width: TABLE_MIN_WIDTH,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+      backgroundColor: colors.surfaceElevated,
+    },
+    dataRowDraggingGhost: {
+      opacity: 0.35,
+    },
+    dataRowMeasure: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      width: TABLE_MIN_WIDTH,
+      paddingVertical: 10,
+      paddingHorizontal: TABLE_ROW_PADDING_H,
+    },
+    td: {
+      justifyContent: 'center',
+      minWidth: 0,
+    },
+    checkbox: {
+      width: 16,
+      height: 16,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceElevated,
+      flexShrink: 0,
+    },
+    nameCellHeader: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      minWidth: 0,
+    },
+    nameCell: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      minWidth: 0,
+    },
+    nameCellInner: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      gap: 6,
+    },
+    nameText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      lineHeight: 18,
+      textAlign: 'center',
+      width: '100%',
+    },
+    nameIcons: {
+      flexDirection: 'row',
+      gap: 6,
+      flexShrink: 0,
+      justifyContent: 'center',
+    },
+    statusPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+      maxWidth: '100%',
+      alignSelf: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    statusPillText: {
+      fontSize: 12,
+      fontWeight: '700',
+      textAlign: 'center',
+      width: '100%',
+    },
+    dimText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    cellTextCentered: {
+      width: '100%',
+      textAlign: 'center',
+    },
+    avatarOrb: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors.avatarBg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarOrbText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    timeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    timeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      ...Platform.select({
+        ios: { fontVariant: ['tabular-nums' as const] },
+        default: {},
+      }),
+    },
+    addListRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      gap: 8,
+      width: TABLE_MIN_WIDTH,
+      alignSelf: 'stretch',
+      paddingVertical: 16,
+      paddingLeft: TABLE_ROW_PADDING_H + COL_WIDTHS.check,
+      paddingRight: TABLE_ROW_PADDING_H,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.divider,
+    },
+    addListRowText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+  });
+}
