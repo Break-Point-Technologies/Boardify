@@ -143,25 +143,3 @@ export function DraggableColumnHeader({
     </GestureDetector>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-    flex: 1,
-  },
-  count: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-  },
-});
