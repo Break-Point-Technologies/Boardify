@@ -1327,6 +1327,16 @@ export default function BoardScreen({
     };
   }, [screenW]);
 
+  const syncFocusPageIndexFromScrollX = useCallback(
+    (x: number) => {
+      if (!boardFocusMode) return;
+      const snap = focusCarousel.snapInterval;
+      const idx = Math.min(columns.length, Math.max(0, Math.round(x / snap)));
+      setFocusPageIndex((p) => (p !== idx ? idx : p));
+    },
+    [boardFocusMode, columns.length, focusCarousel.snapInterval]
+  );
+
   const focusPagerDotLayout = useMemo(() => {
     const totalPages = columns.length + 1;
     const visibleDotCount = Math.min(FOCUS_PAGE_DOT_SLOTS, totalPages);
@@ -1720,20 +1730,22 @@ export default function BoardScreen({
             ]}
             style={styles.columnsScrollView}
             nestedScrollEnabled
-            scrollEventThrottle={16}
+            scrollEventThrottle={boardFocusMode ? 1 : 16}
             // @ts-expect-error RN ScrollView iOS prop; RNGH typings omit it
             delayContentTouches={false}
             onScroll={(e) => {
-              horizontalScrollXRef.current = e.nativeEvent.contentOffset.x;
+              const x = e.nativeEvent.contentOffset.x;
+              horizontalScrollXRef.current = x;
+              syncFocusPageIndexFromScrollX(x);
               requestAnimationFrame(remeasureAllColumns);
+            }}
+            onScrollEndDrag={(e) => {
+              if (!boardFocusMode) return;
+              syncFocusPageIndexFromScrollX(e.nativeEvent.contentOffset.x);
             }}
             onMomentumScrollEnd={(e) => {
               if (!boardFocusMode) return;
-              const x = e.nativeEvent.contentOffset.x;
-              const snap = focusCarousel.snapInterval;
-              setFocusPageIndex(
-                Math.min(columns.length, Math.max(0, Math.round(x / snap)))
-              );
+              syncFocusPageIndexFromScrollX(e.nativeEvent.contentOffset.x);
             }}
           >
           {listDragging
