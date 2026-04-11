@@ -12,7 +12,7 @@ import {
 } from '../../utils/workTime';
 import { formatTaskDateTimeDisplay, hasValidTaskIso } from '../../utils/taskDateTime';
 import { TaskDatetimeField, type TaskDatetimeFieldKey } from './TaskDatetimeField';
-import { useTheme } from '../../theme';
+import { useTheme, type ThemeColors } from '../../theme';
 
 function uid() {
   return `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -31,6 +31,7 @@ type Props = {
 
 export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChange }: Props) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createTaskWorkTimeStyles(colors), [colors]);
   const [tick, setTick] = useState(0);
   const [manualStartIso, setManualStartIso] = useState<string | undefined>();
   const [manualEndIso, setManualEndIso] = useState<string | undefined>();
@@ -252,7 +253,7 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
               <Text style={styles.logHeading}>
                 History <Text style={styles.logCount}>({log.length})</Text>
               </Text>
-              <Feather name={historyOpen ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
+              <Feather name={historyOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.iconMuted} />
             </View>
           </Pressable>
           {historyOpen
@@ -272,7 +273,7 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
                       </Text>
                     </View>
                     <Pressable onPress={() => removeEntry(e.id)} hitSlop={10} style={styles.logTrash}>
-                      <Feather name="trash-2" size={17} color="#b91c1c" />
+                      <Feather name="trash-2" size={17} color={colors.danger} />
                     </Pressable>
                   </View>
                 ))
@@ -283,27 +284,28 @@ export function TaskWorkTimeSection({ task, onChange, activeField, onActiveChang
   );
 }
 
-const styles = StyleSheet.create({
+function createTaskWorkTimeStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   totalBanner: {
     marginBottom: 14,
   },
   totalValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   totalCaption: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#888',
+    color: colors.textTertiary,
     marginTop: 2,
   },
   stopwatchCard: {
-    backgroundColor: '#fafafa',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: colors.divider,
     padding: 14,
     marginBottom: 14,
   },
@@ -319,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
     letterSpacing: 0.5,
   },
   statusPill: {
@@ -332,26 +334,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusOn: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#6ee7b7',
+    backgroundColor: colors.successTrack,
+    borderColor: colors.success,
   },
   statusOff: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#d4d4d4',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.divider,
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#a3a3a3',
+    backgroundColor: colors.iconMuted,
   },
   statusDotOn: {
-    backgroundColor: '#059669',
+    backgroundColor: colors.successEmphasis,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#404040',
+    color: colors.textSecondary,
   },
   mainActionPressable: {
     alignSelf: 'stretch',
@@ -371,13 +373,13 @@ const styles = StyleSheet.create({
     top: SHIFT,
     right: -SHIFT,
     bottom: -SHIFT,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.shadowFill,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: colors.border,
   },
   neuBtnShadowMuted: {
-    backgroundColor: '#e8e8e8',
+    backgroundColor: colors.shadowFill,
   },
   neuBtnFace: {
     position: 'relative',
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: colors.border,
     paddingVertical: 14,
     paddingHorizontal: 16,
     minHeight: 52,
@@ -397,7 +399,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   neuBtnFaceDisabled: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.surfaceMuted,
   },
   neuBtnFacePressed: {
     transform: [{ translateX: SHIFT }, { translateY: SHIFT }],
@@ -408,13 +410,13 @@ const styles = StyleSheet.create({
   neuBtnFaceText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
   },
   neuBtnManualText: {
     fontSize: 15,
   },
   neuBtnManualTextDisabled: {
-    color: '#9ca3af',
+    color: colors.textTertiary,
     fontWeight: '700',
   },
   resetBtn: {
@@ -422,8 +424,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -437,16 +439,16 @@ const styles = StyleSheet.create({
   halfBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
   },
   halfBtnTextEmphasis: {
     fontWeight: '800',
   },
   manualCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceElevated,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: colors.divider,
     padding: 12,
     paddingBottom: 14,
     marginBottom: 4,
@@ -454,20 +456,20 @@ const styles = StyleSheet.create({
   manualTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
     marginBottom: 10,
   },
   manualPreviewOk: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#15803d',
+    color: colors.successEmphasis,
     marginTop: 4,
     marginBottom: 10,
   },
   manualPreviewErr: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#b45309',
+    color: colors.dangerText,
     marginTop: 4,
     marginBottom: 10,
   },
@@ -492,20 +494,20 @@ const styles = StyleSheet.create({
   logHeading: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#888',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   logCount: {
     fontWeight: '700',
-    color: '#aaa',
+    color: colors.placeholder,
   },
   logRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.divider,
   },
   logMeta: {
     flex: 1,
@@ -515,14 +517,15 @@ const styles = StyleSheet.create({
   logDuration: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0a0a0a',
+    color: colors.textPrimary,
   },
   logSub: {
     fontSize: 12,
-    color: '#888',
+    color: colors.textTertiary,
     marginTop: 3,
   },
   logTrash: {
     padding: 4,
   },
-});
+  });
+}

@@ -21,7 +21,7 @@ import type {
 } from '../../types/board';
 import { TaskDatetimeField, type TaskDatetimeFieldKey } from './TaskDatetimeField';
 import { TaskWorkTimeSection } from './TaskWorkTimeSection';
-import { useTheme } from '../../theme';
+import { useTheme, type ThemeColors } from '../../theme';
 
 const SHIFT = 5;
 const MEMBERS_SCROLL_PADDING = 12;
@@ -45,6 +45,700 @@ function uid() {
   return `t-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function createTaskDetailStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+  flex: { flex: 1 },
+  scrollInner: {
+    paddingBottom: 32,
+  },
+  titleInput: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    paddingVertical: 4,
+    marginBottom: 8,
+    minHeight: 36,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.sectionLabel,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingBottom: 16,
+    paddingRight: 8,
+  },
+  quickChip: {
+    alignItems: 'center',
+    width: 76,
+  },
+  quickChipIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  quickChipLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  quickHint: {
+    fontSize: 12,
+    color: colors.placeholder,
+    marginTop: -8,
+    marginBottom: 14,
+    lineHeight: 17,
+  },
+  memberPickerInset: {
+    alignSelf: 'stretch',
+    width: '100%',
+    marginTop: 12,
+    paddingTop: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+  },
+  memberPickerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  memberPickerSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textTertiary,
+    marginBottom: 8,
+  },
+  memberPickerRow: {
+    alignSelf: 'stretch',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  memberPickerRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    minHeight: 48,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  memberPickerRowPressed: {
+    backgroundColor: colors.tableRowAlt,
+  },
+  memberPickerRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  memberPickerEmpty: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textTertiary,
+    paddingVertical: 10,
+    lineHeight: 20,
+  },
+  pickerName: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.shadowFill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.sectionLabel,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionCardWrap: {
+    position: 'relative',
+    marginRight: SHIFT,
+    marginBottom: SHIFT,
+  },
+  sectionCardShadow: {
+    position: 'absolute',
+    left: SHIFT,
+    top: SHIFT,
+    right: -SHIFT,
+    bottom: -SHIFT,
+    backgroundColor: colors.shadowFill,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sectionCard: {
+    position: 'relative',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+  },
+  bodyInput: {
+    minHeight: 100,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  hint: {
+    fontSize: 12,
+    color: colors.textTertiary,
+    marginBottom: 10,
+    lineHeight: 17,
+  },
+  memberHint: {
+    fontSize: 12,
+    color: colors.textTertiary,
+    marginTop: 8,
+    marginBottom: 0,
+    lineHeight: 16,
+  },
+  memberRowLead: {
+    minWidth: 0,
+    minHeight: 56,
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
+  memberHintInRow: {
+    fontSize: 13,
+    color: colors.textTertiary,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  labelHint: {
+    fontSize: 13,
+    color: colors.textTertiary,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  labelsCollapsibleHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    minHeight: 28,
+  },
+  labelsCollapsibleHeadPressed: {
+    opacity: 0.88,
+  },
+  labelsCollapsibleHeadLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  labelsSummarySpacer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  labelsCollapsibleChevron: {
+    flexShrink: 0,
+  },
+  labelList: {
+    marginTop: 0,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  labelRowOuter: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    minHeight: 48,
+    paddingVertical: 10,
+    paddingRight: 4,
+    paddingLeft: 0,
+  },
+  labelRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  labelRowSelected: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  labelRowPressed: {
+    backgroundColor: colors.tableRowAlt,
+  },
+  labelSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginLeft: 10,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  labelRowName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    minWidth: 0,
+  },
+  labelRowNameOn: {
+    color: colors.textPrimary,
+    fontWeight: '800',
+  },
+  labelRowToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: colors.focusDotInactive,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  labelRowToggleOn: {
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+  },
+  memberRowShell: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 2,
+    paddingBottom: 4,
+    gap: 12,
+  },
+  memberRowBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  memberAssigneesCluster: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: 16,
+    minWidth: 0,
+  },
+  memberChip: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: 56,
+    paddingTop: 2,
+    paddingBottom: 4,
+  },
+  memberChipPressed: {
+    opacity: 0.88,
+  },
+  memberChipAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberChipAvatarText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  memberChipRemoveRow: {
+    width: 56,
+    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberChipRemoveIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addCircle: {
+    flexShrink: 0,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceMuted,
+  },
+  addCircleOpen: {
+    borderStyle: 'solid',
+    backgroundColor: colors.surfaceMuted,
+  },
+  clBlock: {
+    marginBottom: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  clHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  clTitleInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    paddingVertical: 4,
+  },
+  clItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  clCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clCheckDone: {
+    backgroundColor: colors.primaryButtonBg,
+    borderColor: colors.border,
+  },
+  clItemInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  clItemInputDone: {
+    textDecorationLine: 'line-through',
+    color: colors.textTertiary,
+  },
+  clAddItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  clAddItemText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  attachRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  attachIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachMeta: {
+    flex: 1,
+  },
+  attachName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  attachSub: {
+    fontSize: 12,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
+  ghostBtnOuter: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  ghostBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  ghostBtnIcon: {
+    marginRight: 8,
+    flexGrow: 0,
+    flexShrink: 0,
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ghostBtnText: {
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  emptyActivity: {
+    fontSize: 14,
+    color: colors.textTertiary,
+    lineHeight: 20,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
+  },
+  activityDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.success,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: 4,
+  },
+  activityBody: {
+    flex: 1,
+  },
+  activityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    lineHeight: 20,
+  },
+  activityAt: {
+    fontSize: 12,
+    color: colors.textTertiary,
+    marginTop: 4,
+  },
+});
+}
+function QuickChip({
+  styles,
+  colors,
+  icon,
+  label,
+  onPress,
+}: {
+  styles: ReturnType<typeof createTaskDetailStyles>;
+  colors: ThemeColors;
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        hapticLight();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.quickChip, pressed && { opacity: 0.88 }]}
+    >
+      <View style={styles.quickChipIcon}>
+        <Feather name={icon} size={18} color={colors.iconPrimary} />
+      </View>
+      <Text style={styles.quickChipLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Section({
+  styles,
+  colors,
+  title,
+  icon,
+  children,
+}: {
+  styles: ReturnType<typeof createTaskDetailStyles>;
+  colors: ThemeColors;
+  title: string;
+  icon: keyof typeof Feather.glyphMap;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Feather name={icon} size={16} color={colors.iconMuted} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      <View style={styles.sectionCardWrap}>
+        <View style={styles.sectionCardShadow} />
+        <View style={styles.sectionCard}>{children}</View>
+      </View>
+    </View>
+  );
+}
+
+function GhostButton({
+  styles,
+  colors,
+  label,
+  icon,
+  onPress,
+}: {
+  styles: ReturnType<typeof createTaskDetailStyles>;
+  colors: ThemeColors;
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        hapticLight();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.ghostBtnOuter, pressed && { opacity: 0.85 }]}
+    >
+      <View style={styles.ghostBtnRow}>
+        <View style={styles.ghostBtnIcon}>
+          <Feather name={icon} size={16} color={colors.iconPrimary} />
+        </View>
+        <Text style={styles.ghostBtnText}>{label}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function ChecklistBlock({
+  styles,
+  colors,
+  checklist,
+  onChange,
+  onRemove,
+}: {
+  styles: ReturnType<typeof createTaskDetailStyles>;
+  colors: ThemeColors;
+  checklist: TaskChecklist;
+  onChange: (next: TaskChecklist) => void;
+  onRemove: () => void;
+}) {
+  const items = checklist.items;
+
+  const toggleItem = (id: string) => {
+    hapticLight();
+    onChange({
+      ...checklist,
+      items: items.map((it) => (it.id === id ? { ...it, done: !it.done } : it)),
+    });
+  };
+
+  const setItemText = (id: string, text: string) => {
+    onChange({
+      ...checklist,
+      items: items.map((it) => (it.id === id ? { ...it, text } : it)),
+    });
+  };
+
+  const addItem = () => {
+    hapticLight();
+    onChange({
+      ...checklist,
+      items: [...items, { id: uid(), text: '', done: false }],
+    });
+  };
+
+  return (
+    <View style={styles.clBlock}>
+      <View style={styles.clHead}>
+        <TextInput
+          value={checklist.title}
+          onChangeText={(title) => onChange({ ...checklist, title })}
+          style={styles.clTitleInput}
+          placeholder="Checklist title"
+          placeholderTextColor={colors.placeholder}
+        />
+        <Pressable onPress={onRemove} hitSlop={8}>
+          <Feather name="trash-2" size={18} color={colors.danger} />
+        </Pressable>
+      </View>
+      {items.map((it) => (
+        <View key={it.id} style={styles.clItemRow}>
+          <Pressable
+            onPress={() => toggleItem(it.id)}
+            style={[styles.clCheck, it.done && styles.clCheckDone]}
+          >
+            {it.done ? <Feather name="check" size={14} color={colors.primaryButtonText} /> : null}
+          </Pressable>
+          <TextInput
+            value={it.text}
+            onChangeText={(t) => setItemText(it.id, t)}
+            style={[styles.clItemInput, it.done && styles.clItemInputDone]}
+            placeholder="Item"
+            placeholderTextColor={colors.placeholder}
+          />
+        </View>
+      ))}
+      <Pressable onPress={addItem} style={styles.clAddItem}>
+        <Feather name="plus" size={16} color={colors.iconMuted} />
+        <Text style={styles.clAddItemText}>Add item</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 type Props = {
   task: BoardCardData;
   onChange: (next: BoardCardData) => void;
@@ -52,6 +746,7 @@ type Props = {
 
 export function TaskDetailContent({ task, onChange }: Props) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createTaskDetailStyles(colors), [colors]);
   const [memberPickerOpen, setMemberPickerOpen] = useState(false);
   const [labelsSectionOpen, setLabelsSectionOpen] = useState(true);
   const [activeDateField, setActiveDateField] = useState<TaskDatetimeFieldKey | null>(null);
@@ -206,7 +901,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
           onChangeText={(t) => onChange({ ...task, title: t })}
           style={styles.titleInput}
           placeholder="Title"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.placeholder}
           multiline
           scrollEnabled={false}
         />
@@ -217,25 +912,25 @@ export function TaskDetailContent({ task, onChange }: Props) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.quickRow}
         >
-          <QuickChip icon="users" label="Assign" onPress={toggleMemberPickerFromQuickAdd} />
-          <QuickChip icon="check-square" label="Checklist" onPress={scrollToChecklists} />
-          <QuickChip icon="paperclip" label="Attach" onPress={scrollToAttachments} />
+          <QuickChip styles={styles} colors={colors} icon="users" label="Assign" onPress={toggleMemberPickerFromQuickAdd} />
+          <QuickChip styles={styles} colors={colors} icon="check-square" label="Checklist" onPress={scrollToChecklists} />
+          <QuickChip styles={styles} colors={colors} icon="paperclip" label="Attach" onPress={scrollToAttachments} />
         </ScrollView>
         <Text style={styles.quickHint}>Dates, labels, and more — in the sections below.</Text>
 
-        <Section title="Description" icon="align-left">
+        <Section styles={styles} colors={colors} title="Description" icon="align-left">
           <TextInput
             value={task.description ?? ''}
             onChangeText={(description) => setField('description', description || undefined)}
             style={styles.bodyInput}
             placeholder="Add a detailed description…"
-            placeholderTextColor="#888"
+            placeholderTextColor={colors.placeholder}
             multiline
             textAlignVertical="top"
           />
         </Section>
 
-        <Section title="Dates" icon="calendar">
+        <Section styles={styles} colors={colors} title="Dates" icon="calendar">
           <TaskDatetimeField
             fieldKey="start"
             label="Start"
@@ -255,7 +950,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
           />
         </Section>
 
-        <Section title="Time tracked" icon="clock">
+        <Section styles={styles} colors={colors} title="Time tracked" icon="clock">
           <TaskWorkTimeSection
             task={task}
             onChange={onChange}
@@ -279,14 +974,14 @@ export function TaskDetailContent({ task, onChange }: Props) {
             accessibilityLabel={`Labels, ${labelsSectionOpen ? 'expanded' : 'collapsed'}`}
           >
             <View style={styles.labelsCollapsibleHeadLeft}>
-              <Feather name="tag" size={16} color="#666" />
+              <Feather name="tag" size={16} color={colors.iconMuted} />
               <Text style={styles.sectionTitle}>Labels</Text>
             </View>
             <View style={styles.labelsSummarySpacer} />
             <Feather
               name={labelsSectionOpen ? 'chevron-up' : 'chevron-down'}
               size={20}
-              color="#444"
+              color={colors.textSecondary}
               style={styles.labelsCollapsibleChevron}
             />
           </Pressable>
@@ -321,7 +1016,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
                             {l.name}
                           </Text>
                           <View style={[styles.labelRowToggle, on && styles.labelRowToggleOn]}>
-                            {on ? <Feather name="check" size={18} color="#0a0a0a" /> : null}
+                            {on ? <Feather name="check" size={18} color={colors.iconPrimary} /> : null}
                           </View>
                         </View>
                       </Pressable>
@@ -338,7 +1033,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
             membersSectionYRef.current = e.nativeEvent.layout.y;
           }}
         >
-          <Section title="Members" icon="users">
+          <Section styles={styles} colors={colors} title="Members" icon="users">
             <View style={styles.memberRowShell}>
               <View style={styles.memberRowBody}>
                 {assignees.length > 0 ? (
@@ -355,7 +1050,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
                         </View>
                         <View style={styles.memberChipRemoveRow} accessibilityElementsHidden={true}>
                           <View style={styles.memberChipRemoveIcon}>
-                            <Feather name="x" size={15} color="#525252" />
+                            <Feather name="x" size={15} color={colors.iconMuted} />
                           </View>
                         </View>
                       </Pressable>
@@ -383,7 +1078,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
                 <Feather
                   name={memberPickerOpen ? 'chevron-up' : 'plus'}
                   size={22}
-                  color={memberPickerOpen ? '#0a0a0a' : '#666'}
+                  color={memberPickerOpen ? colors.iconPrimary : colors.iconMuted}
                 />
               </Pressable>
             </View>
@@ -411,7 +1106,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
                         <Text style={styles.pickerName} numberOfLines={1}>
                           {m.name}
                         </Text>
-                        <Feather name="chevron-right" size={18} color="#999" />
+                        <Feather name="chevron-right" size={18} color={colors.iconMuted} />
                       </View>
                     </Pressable>
                   ))
@@ -433,10 +1128,12 @@ export function TaskDetailContent({ task, onChange }: Props) {
             checklistsSectionYRef.current = e.nativeEvent.layout.y;
           }}
         >
-          <Section title="Checklists" icon="check-square">
+          <Section styles={styles} colors={colors} title="Checklists" icon="check-square">
             {checklists.map((cl) => (
               <ChecklistBlock
                 key={cl.id}
+                styles={styles}
+                colors={colors}
                 checklist={cl}
                 onChange={(next) => updateChecklist(cl.id, next)}
                 onRemove={() =>
@@ -444,7 +1141,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
                 }
               />
             ))}
-            <GhostButton icon="plus" label="Add checklist" onPress={addChecklist} />
+            <GhostButton styles={styles} colors={colors} icon="plus" label="Add checklist" onPress={addChecklist} />
           </Section>
         </View>
 
@@ -453,7 +1150,7 @@ export function TaskDetailContent({ task, onChange }: Props) {
             attachmentsSectionYRef.current = e.nativeEvent.layout.y;
           }}
         >
-          <Section title="Attachments" icon="paperclip">
+          <Section styles={styles} colors={colors} title="Attachments" icon="paperclip">
             {attachments.map((a) => (
               <View key={a.id} style={styles.attachRow}>
                 <View style={[styles.attachIcon, { backgroundColor: colors.canvas }]}>
@@ -470,15 +1167,15 @@ export function TaskDetailContent({ task, onChange }: Props) {
                   }}
                   hitSlop={8}
                 >
-                  <Feather name="trash-2" size={18} color="#b91c1c" />
+                  <Feather name="trash-2" size={18} color={colors.danger} />
                 </Pressable>
               </View>
             ))}
-            <GhostButton icon="plus" label="Add attachment" onPress={addAttachment} />
+            <GhostButton styles={styles} colors={colors} icon="plus" label="Add attachment" onPress={addAttachment} />
           </Section>
         </View>
 
-        <Section title="Activity" icon="activity">
+        <Section styles={styles} colors={colors} title="Activity" icon="activity">
           {activity.length === 0 ? (
             <Text style={styles.emptyActivity}>
               No history on this card yet — moves, edits, and comments will show here.
@@ -499,679 +1196,3 @@ export function TaskDetailContent({ task, onChange }: Props) {
     </KeyboardAvoidingView>
   );
 }
-
-function QuickChip({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        hapticLight();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.quickChip, pressed && { opacity: 0.88 }]}
-    >
-      <View style={styles.quickChipIcon}>
-        <Feather name={icon} size={18} color="#0a0a0a" />
-      </View>
-      <Text style={styles.quickChipLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function Section({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: keyof typeof Feather.glyphMap;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHead}>
-        <Feather name={icon} size={16} color="#666" />
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-      <View style={styles.sectionCardWrap}>
-        <View style={styles.sectionCardShadow} />
-        <View style={styles.sectionCard}>{children}</View>
-      </View>
-    </View>
-  );
-}
-
-function GhostButton({
-  label,
-  icon,
-  onPress,
-}: {
-  label: string;
-  icon: keyof typeof Feather.glyphMap;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        hapticLight();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.ghostBtnOuter, pressed && { opacity: 0.85 }]}
-    >
-      <View style={styles.ghostBtnRow}>
-        <View style={styles.ghostBtnIcon}>
-          <Feather name={icon} size={16} color="#0a0a0a" />
-        </View>
-        <Text style={styles.ghostBtnText}>{label}</Text>
-      </View>
-    </Pressable>
-  );
-}
-
-function ChecklistBlock({
-  checklist,
-  onChange,
-  onRemove,
-}: {
-  checklist: TaskChecklist;
-  onChange: (next: TaskChecklist) => void;
-  onRemove: () => void;
-}) {
-  const items = checklist.items;
-
-  const toggleItem = (id: string) => {
-    hapticLight();
-    onChange({
-      ...checklist,
-      items: items.map((it) => (it.id === id ? { ...it, done: !it.done } : it)),
-    });
-  };
-
-  const setItemText = (id: string, text: string) => {
-    onChange({
-      ...checklist,
-      items: items.map((it) => (it.id === id ? { ...it, text } : it)),
-    });
-  };
-
-  const addItem = () => {
-    hapticLight();
-    onChange({
-      ...checklist,
-      items: [...items, { id: uid(), text: '', done: false }],
-    });
-  };
-
-  return (
-    <View style={styles.clBlock}>
-      <View style={styles.clHead}>
-        <TextInput
-          value={checklist.title}
-          onChangeText={(title) => onChange({ ...checklist, title })}
-          style={styles.clTitleInput}
-          placeholder="Checklist title"
-          placeholderTextColor="#888"
-        />
-        <Pressable onPress={onRemove} hitSlop={8}>
-          <Feather name="trash-2" size={18} color="#b91c1c" />
-        </Pressable>
-      </View>
-      {items.map((it) => (
-        <View key={it.id} style={styles.clItemRow}>
-          <Pressable
-            onPress={() => toggleItem(it.id)}
-            style={[styles.clCheck, it.done && styles.clCheckDone]}
-          >
-            {it.done ? <Feather name="check" size={14} color="#fff" /> : null}
-          </Pressable>
-          <TextInput
-            value={it.text}
-            onChangeText={(t) => setItemText(it.id, t)}
-            style={[styles.clItemInput, it.done && styles.clItemInputDone]}
-            placeholder="Item"
-            placeholderTextColor="#aaa"
-          />
-        </View>
-      ))}
-      <Pressable onPress={addItem} style={styles.clAddItem}>
-        <Feather name="plus" size={16} color="#666" />
-        <Text style={styles.clAddItemText}>Add item</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scrollInner: {
-    paddingBottom: 32,
-  },
-  titleInput: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    paddingVertical: 4,
-    marginBottom: 8,
-    minHeight: 36,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#888',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingBottom: 16,
-    paddingRight: 8,
-  },
-  quickChip: {
-    alignItems: 'center',
-    width: 76,
-  },
-  quickChipIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  quickChipLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0a0a0a',
-    textAlign: 'center',
-  },
-  quickHint: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: -8,
-    marginBottom: 14,
-    lineHeight: 17,
-  },
-  memberPickerInset: {
-    alignSelf: 'stretch',
-    width: '100%',
-    marginTop: 12,
-    paddingTop: 10,
-    paddingHorizontal: 8,
-    paddingBottom: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
-    backgroundColor: '#f6f6f6',
-    borderRadius: 10,
-  },
-  memberPickerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-    marginBottom: 2,
-  },
-  memberPickerSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#888',
-    marginBottom: 8,
-  },
-  memberPickerRow: {
-    alignSelf: 'stretch',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  memberPickerRowInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    minHeight: 48,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  memberPickerRowPressed: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  memberPickerRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
-  },
-  memberPickerEmpty: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    paddingVertical: 10,
-    lineHeight: 20,
-  },
-  pickerName: {
-    flex: 1,
-    flexShrink: 1,
-    minWidth: 0,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0a0a0a',
-    marginLeft: 12,
-    marginRight: 8,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e0e0e0',
-    borderWidth: 1,
-    borderColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#333',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#444',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionCardWrap: {
-    position: 'relative',
-    marginRight: SHIFT,
-    marginBottom: SHIFT,
-  },
-  sectionCardShadow: {
-    position: 'absolute',
-    left: SHIFT,
-    top: SHIFT,
-    right: -SHIFT,
-    bottom: -SHIFT,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  sectionCard: {
-    position: 'relative',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#000',
-    padding: 14,
-  },
-  bodyInput: {
-    minHeight: 100,
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#0a0a0a',
-    fontWeight: '500',
-  },
-  hint: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 10,
-    lineHeight: 17,
-  },
-  memberHint: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 8,
-    marginBottom: 0,
-    lineHeight: 16,
-  },
-  memberRowLead: {
-    minWidth: 0,
-    minHeight: 56,
-    justifyContent: 'center',
-    paddingRight: 8,
-  },
-  memberHintInRow: {
-    fontSize: 13,
-    color: '#9ca3af',
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  labelHint: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  labelsCollapsibleHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    minHeight: 28,
-  },
-  labelsCollapsibleHeadPressed: {
-    opacity: 0.88,
-  },
-  labelsCollapsibleHeadLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
-  },
-  labelsSummarySpacer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  labelsCollapsibleChevron: {
-    flexShrink: 0,
-  },
-  labelList: {
-    marginTop: 0,
-    width: '100%',
-    alignSelf: 'stretch',
-  },
-  labelRowOuter: {
-    width: '100%',
-    alignSelf: 'stretch',
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    minHeight: 48,
-    paddingVertical: 10,
-    paddingRight: 4,
-    paddingLeft: 0,
-  },
-  labelRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e5e5',
-  },
-  labelRowSelected: {
-    backgroundColor: '#f5f5f5',
-  },
-  labelRowPressed: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  labelSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#000',
-    marginLeft: 10,
-    marginRight: 12,
-    flexShrink: 0,
-  },
-  labelRowName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#444',
-    minWidth: 0,
-  },
-  labelRowNameOn: {
-    color: '#0a0a0a',
-    fontWeight: '800',
-  },
-  labelRowToggle: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#c4c4c4',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  labelRowToggleOn: {
-    borderColor: '#000',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-  },
-  memberRowShell: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 2,
-    paddingBottom: 4,
-    gap: 12,
-  },
-  memberRowBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  memberAssigneesCluster: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    gap: 16,
-    minWidth: 0,
-  },
-  memberChip: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: 56,
-    paddingTop: 2,
-    paddingBottom: 4,
-  },
-  memberChipPressed: {
-    opacity: 0.88,
-  },
-  memberChipAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberChipAvatarText: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0a0a0a',
-  },
-  memberChipRemoveRow: {
-    width: 56,
-    marginTop: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberChipRemoveIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d4d4d4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addCircle: {
-    flexShrink: 0,
-    alignSelf: 'flex-start',
-    marginTop: 2,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fafafa',
-  },
-  addCircleOpen: {
-    borderStyle: 'solid',
-    backgroundColor: '#eee',
-  },
-  clBlock: {
-    marginBottom: 14,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  clHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  clTitleInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0a0a0a',
-    paddingVertical: 4,
-  },
-  clItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  clCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#000',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clCheckDone: {
-    backgroundColor: '#0a0a0a',
-  },
-  clItemInput: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0a0a0a',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
-  },
-  clItemInputDone: {
-    textDecorationLine: 'line-through',
-    color: '#888',
-  },
-  clAddItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
-  clAddItemText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#666',
-  },
-  attachRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  attachIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attachMeta: {
-    flex: 1,
-  },
-  attachName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  attachSub: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  ghostBtnOuter: {
-    flexDirection: 'row',
-    alignSelf: 'stretch',
-    marginTop: 8,
-    paddingVertical: 8,
-  },
-  ghostBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-  },
-  ghostBtnIcon: {
-    marginRight: 8,
-    flexGrow: 0,
-    flexShrink: 0,
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ghostBtnText: {
-    flexShrink: 1,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0a0a0a',
-  },
-  emptyActivity: {
-    fontSize: 14,
-    color: '#888',
-    lineHeight: 20,
-  },
-  activityRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 14,
-  },
-  activityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#a5d6a5',
-    borderWidth: 1,
-    borderColor: '#000',
-    marginTop: 4,
-  },
-  activityBody: {
-    flex: 1,
-  },
-  activityText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0a0a0a',
-    lineHeight: 20,
-  },
-  activityAt: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
-  },
-});

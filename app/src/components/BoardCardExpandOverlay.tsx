@@ -23,6 +23,7 @@ import { Feather } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 import type { BoardCardData } from '../types/board';
 import { TaskDetailContent } from './task/TaskDetailContent';
+import { useTheme, type ThemeColors } from '../theme';
 
 const CARD_SHIFT = 4;
 
@@ -61,6 +62,16 @@ export function BoardCardExpandOverlay({
   onUpdateCard,
   onClose,
 }: Props) {
+  const { colors, resolvedScheme } = useTheme();
+  const styles = useMemo(() => createExpandOverlayStyles(colors), [colors]);
+  const headerBorderTargets = useMemo(
+    () =>
+      resolvedScheme === 'dark'
+        ? (['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(255,255,255,0.1)'] as const)
+        : (['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.08)'] as const),
+    [resolvedScheme]
+  );
+
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -142,8 +153,8 @@ export function BoardCardExpandOverlay({
       width,
       height,
       borderRadius,
-      backgroundColor: '#fff',
-      shadowColor: '#000',
+      backgroundColor: colors.surfaceElevated,
+      shadowColor: colors.border,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity,
       shadowRadius: 16,
@@ -171,9 +182,9 @@ export function BoardCardExpandOverlay({
       right: -CARD_SHIFT,
       bottom: -CARD_SHIFT,
       borderRadius,
-      backgroundColor: '#000',
+      backgroundColor: colors.shadowFillColumn,
       borderWidth: 1,
-      borderColor: '#000',
+      borderColor: colors.border,
       opacity: interpolate(t, [0, 0.22, 0.55, 1], [1, 1, 0, 0], Extrapolation.CLAMP),
     };
   });
@@ -198,11 +209,7 @@ export function BoardCardExpandOverlay({
         },
       ],
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: interpolateColor(
-        t,
-        [a * 0.5, a, b + 0.04],
-        ['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.08)']
-      ),
+      borderBottomColor: interpolateColor(t, [a * 0.5, a, b + 0.04], headerBorderTargets),
     };
   });
 
@@ -223,7 +230,7 @@ export function BoardCardExpandOverlay({
 
   const cardOutlineStyle = useAnimatedStyle(() => ({
     borderWidth: interpolate(progress.value, [0, 0.45, 1], [1, 0, 0], Extrapolation.CLAMP),
-    borderColor: '#000',
+    borderColor: colors.border,
   }));
 
   const handleClose = () => {
@@ -256,7 +263,7 @@ export function BoardCardExpandOverlay({
                   style={styles.closeBtn}
                   accessibilityLabel="Close"
                 >
-                  <Feather name="x" size={22} color="#0a0a0a" />
+                  <Feather name="x" size={22} color={colors.iconPrimary} />
                 </Pressable>
               </Animated.View>
               <View style={[styles.detailBody, detailChromeStyle]}>
@@ -272,41 +279,43 @@ export function BoardCardExpandOverlay({
   );
 }
 
-const styles = StyleSheet.create({
-  modalRoot: {
-    flex: 1,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0a0a0a',
-  },
-  cardFace: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  cardFaceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  columnBadge: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#666',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginRight: 8,
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  detailBody: {
-    flex: 1,
-    minHeight: 0,
-  },
-  detailScrollWrap: {
-    flex: 1,
-    minHeight: 0,
-  },
-});
+function createExpandOverlayStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    modalRoot: {
+      flex: 1,
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.canvas,
+    },
+    cardFace: {
+      flex: 1,
+      backgroundColor: colors.surfaceElevated,
+    },
+    cardFaceHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    columnBadge: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.sectionLabel,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginRight: 8,
+    },
+    closeBtn: {
+      padding: 4,
+    },
+    detailBody: {
+      flex: 1,
+      minHeight: 0,
+    },
+    detailScrollWrap: {
+      flex: 1,
+      minHeight: 0,
+    },
+  });
+}
