@@ -106,13 +106,15 @@ function createTaskDetailStyles(colors: ThemeColors) {
     alignSelf: 'stretch',
     width: '100%',
     marginTop: 12,
+    paddingTop: 12,
+    paddingHorizontal: 0,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  /** Flush row: no stack margin / top hairline; padding nudges copy below the chevron row. */
+  memberPickerInsetFlush: {
+    marginTop: 6,
     paddingTop: 10,
-    paddingHorizontal: 8,
-    paddingBottom: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.divider,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
   },
   memberPickerTitle: {
     fontSize: 15,
@@ -836,6 +838,45 @@ export function TaskDetailContent({ task, onChange }: Props) {
     [assignees]
   );
 
+  const renderMemberPickerBody = useCallback(
+    () => (
+      <>
+        <Text style={styles.memberPickerTitle}>Choose someone to add</Text>
+        <Text style={styles.memberPickerSubtitle}>Tap a row — no extra button needed</Text>
+        {availableMembers.length > 0 ? (
+          availableMembers.map((m, i) => (
+            <Pressable
+              key={m.id}
+              onPress={() => addMember(m)}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${m.name}`}
+              style={({ pressed }) => [
+                styles.memberPickerRow,
+                i < availableMembers.length - 1 && styles.memberPickerRowBorder,
+                pressed && styles.memberPickerRowPressed,
+              ]}
+            >
+              <View style={styles.memberPickerRowInner}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{m.initials}</Text>
+                </View>
+                <Text style={styles.pickerName} numberOfLines={1}>
+                  {m.name}
+                </Text>
+                <Feather name="chevron-right" size={18} color={colors.iconMuted} />
+              </View>
+            </Pressable>
+          ))
+        ) : (
+          <Text style={styles.memberPickerEmpty}>
+            Everyone available is already on this card.
+          </Text>
+        )}
+      </>
+    ),
+    [addMember, availableMembers, colors.iconMuted, styles]
+  );
+
   const toggleMemberPickerFromQuickAdd = useCallback(() => {
     setMemberPickerOpen((prev) => {
       const next = !prev;
@@ -1056,13 +1097,15 @@ export function TaskDetailContent({ task, onChange }: Props) {
                       </Pressable>
                     ))}
                   </View>
+                ) : memberPickerOpen ? (
+                  <View style={[styles.memberPickerInset, styles.memberPickerInsetFlush]}>
+                    {renderMemberPickerBody()}
+                  </View>
                 ) : (
                   <View style={styles.memberRowLead}>
-                    {!memberPickerOpen ? (
-                      <Text style={styles.memberHintInRow} numberOfLines={2}>
-                        Tap + to add someone.
-                      </Text>
-                    ) : null}
+                    <Text style={styles.memberHintInRow} numberOfLines={2}>
+                      Tap + to add someone.
+                    </Text>
                   </View>
                 )}
               </View>
@@ -1082,40 +1125,8 @@ export function TaskDetailContent({ task, onChange }: Props) {
                 />
               </Pressable>
             </View>
-            {memberPickerOpen ? (
-              <View style={styles.memberPickerInset}>
-                <Text style={styles.memberPickerTitle}>Choose someone to add</Text>
-                <Text style={styles.memberPickerSubtitle}>Tap a row — no extra button needed</Text>
-                {availableMembers.length > 0 ? (
-                  availableMembers.map((m, i) => (
-                    <Pressable
-                      key={m.id}
-                      onPress={() => addMember(m)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Add ${m.name}`}
-                      style={({ pressed }) => [
-                        styles.memberPickerRow,
-                        i < availableMembers.length - 1 && styles.memberPickerRowBorder,
-                        pressed && styles.memberPickerRowPressed,
-                      ]}
-                    >
-                      <View style={styles.memberPickerRowInner}>
-                        <View style={styles.avatar}>
-                          <Text style={styles.avatarText}>{m.initials}</Text>
-                        </View>
-                        <Text style={styles.pickerName} numberOfLines={1}>
-                          {m.name}
-                        </Text>
-                        <Feather name="chevron-right" size={18} color={colors.iconMuted} />
-                      </View>
-                    </Pressable>
-                  ))
-                ) : (
-                  <Text style={styles.memberPickerEmpty}>
-                    Everyone available is already on this card.
-                  </Text>
-                )}
-              </View>
+            {memberPickerOpen && assignees.length > 0 ? (
+              <View style={styles.memberPickerInset}>{renderMemberPickerBody()}</View>
             ) : null}
             {memberPickerOpen ? (
               <Text style={styles.memberHint}>Tap a profile or its remove control to take someone off the card.</Text>
