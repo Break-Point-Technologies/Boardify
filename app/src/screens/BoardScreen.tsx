@@ -106,19 +106,17 @@ const FOCUS_LIST_CARD_WIDTH_RATIO = 0.86;
 const FOCUS_LIST_CAROUSEL_GAP = 12;
 const FOCUS_PAGE_DOT_SLOTS = 10;
 
-/** Visual sizes for the fixed 10-slot focus pager (8th–10th slots shrink like the reference). */
+/** Inactive-dot visuals; tail shrink only when exactly {@link FOCUS_PAGE_DOT_SLOTS} dots are on screen. */
 function focusPagerDotVisual(
   slotIndex: number,
-  isActive: boolean,
-  isGhost: boolean
+  visibleDotCount: number,
+  isActive: boolean
 ): { diameter: number; opacity: number } {
-  if (isGhost) {
-    return { diameter: 4, opacity: 0.14 };
-  }
   if (isActive) {
     return { diameter: 12, opacity: 1 };
   }
-  if (slotIndex < 7) {
+  const tail = visibleDotCount === FOCUS_PAGE_DOT_SLOTS && slotIndex >= 7;
+  if (!tail) {
     return { diameter: 7, opacity: 0.48 };
   }
   const tailStep = slotIndex - 7;
@@ -1329,16 +1327,17 @@ export default function BoardScreen({
     };
   }, [screenW]);
 
-  const focusPagerDotWindow = useMemo(() => {
+  const focusPagerDotLayout = useMemo(() => {
     const totalPages = columns.length + 1;
+    const visibleDotCount = Math.min(FOCUS_PAGE_DOT_SLOTS, totalPages);
     if (totalPages <= FOCUS_PAGE_DOT_SLOTS) {
-      return { windowStart: 0, totalPages };
+      return { windowStart: 0, totalPages, visibleDotCount };
     }
     const windowStart = Math.min(
       Math.max(0, focusPageIndex - 4),
       totalPages - FOCUS_PAGE_DOT_SLOTS
     );
-    return { windowStart, totalPages };
+    return { windowStart, totalPages, visibleDotCount };
   }, [columns.length, focusPageIndex]);
 
   const scrollToFocusPageIndex = useCallback(
@@ -2084,30 +2083,24 @@ export default function BoardScreen({
         >
           <View style={styles.focusDotsRowWrap}>
             <View style={styles.focusDotsRow} accessibilityRole="tablist">
-              {Array.from({ length: FOCUS_PAGE_DOT_SLOTS }, (_, slot) => {
-                const { windowStart, totalPages } = focusPagerDotWindow;
+              {Array.from({ length: focusPagerDotLayout.visibleDotCount }, (_, slot) => {
+                const { windowStart, totalPages, visibleDotCount } = focusPagerDotLayout;
                 const pageIndex = windowStart + slot;
-                const isGhost = pageIndex >= totalPages;
-                const isActive = !isGhost && pageIndex === focusPageIndex;
-                const { diameter, opacity } = focusPagerDotVisual(slot, isActive, isGhost);
-                const dotColor = isActive
-                  ? colors.textPrimary
-                  : isGhost
-                    ? colors.textTertiary
-                    : colors.textTertiary;
+                const isActive = pageIndex === focusPageIndex;
+                const { diameter, opacity } = focusPagerDotVisual(
+                  slot,
+                  visibleDotCount,
+                  isActive
+                );
+                const dotColor = isActive ? colors.textPrimary : colors.textTertiary;
                 return (
                   <Pressable
-                    key={`focus-dot-${slot}`}
-                    disabled={isGhost}
+                    key={`focus-dot-${pageIndex}`}
                     onPress={() => scrollToFocusPageIndex(pageIndex)}
                     hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: isActive, disabled: isGhost }}
-                    accessibilityLabel={
-                      isGhost
-                        ? undefined
-                        : `List ${pageIndex + 1} of ${totalPages}${isActive ? ', current' : ''}`
-                    }
+                    accessibilityState={{ selected: isActive }}
+                    accessibilityLabel={`List ${pageIndex + 1} of ${totalPages}${isActive ? ', current' : ''}`}
                     style={styles.focusDotHit}
                   >
                     <View
@@ -2359,12 +2352,12 @@ function createBoardScreenStyles(colors: ThemeColors) {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
     paddingVertical: 2,
     flexShrink: 0,
   },
   focusDotHit: {
-    width: 24,
+    width: 20,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 28,
