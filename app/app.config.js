@@ -80,6 +80,24 @@ if (envVars.GOOGLE_OAUTH_CLIENT_ID_ANDROID_DEV) {
   extra.GOOGLE_OAUTH_CLIENT_ID_ANDROID_DEV = envVars.GOOGLE_OAUTH_CLIENT_ID_ANDROID_DEV;
 }
 
+function isExpoExportWebOnlyFromArgv() {
+  const a = process.argv;
+  for (let i = 0; i < a.length; i++) {
+    const arg = a[i];
+    if (arg === '--platform' || arg === '-p') {
+      const v = a[i + 1];
+      if (!v) continue;
+      const platforms = v.split(',').map((p) => p.trim()).filter(Boolean);
+      return platforms.length === 1 && platforms[0] === 'web';
+    }
+    if (arg.startsWith('--platform=')) {
+      const platforms = arg.slice('--platform='.length).split(',').map((p) => p.trim()).filter(Boolean);
+      return platforms.length === 1 && platforms[0] === 'web';
+    }
+  }
+  return false;
+}
+
 function getReversedClientId() {
   let iosClientId = isRelease 
     ? envVars.GOOGLE_OAUTH_CLIENT_ID_IOS 
@@ -87,6 +105,9 @@ function getReversedClientId() {
   
   if (!iosClientId) {
     if (process.env.EAS_BUILD_PLATFORM === 'android') {
+      return 'com.googleusercontent.apps.placeholder';
+    }
+    if (isExpoExportWebOnlyFromArgv() || process.env.CF_PAGES === '1') {
       return 'com.googleusercontent.apps.placeholder';
     }
     throw new Error(

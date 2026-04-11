@@ -213,6 +213,23 @@ function createLoginStyles(colors: ThemeColors) {
       color: colors.successEmphasis,
       fontWeight: '700',
     },
+    legalFooter: {
+      marginTop: 20,
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
+    legalFooterText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      lineHeight: 18,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    legalLink: {
+      color: colors.successEmphasis,
+      fontWeight: '700',
+      textDecorationLine: Platform.OS === 'web' ? 'underline' : undefined,
+    },
     linkText: {
       color: colors.successEmphasis,
       fontSize: 14,
@@ -783,6 +800,20 @@ export default function LoginScreen() {
                 </Text>
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.legalFooter}>
+              <Text style={styles.legalFooterText}>
+                By continuing, you agree to our{' '}
+                <Text style={styles.legalLink} onPress={() => router.push('/terms')}>
+                  Terms of Service
+                </Text>{' '}
+                and{' '}
+                <Text style={styles.legalLink} onPress={() => router.push('/privacy')}>
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

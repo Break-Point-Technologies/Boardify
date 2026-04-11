@@ -5,6 +5,7 @@ import { handleUser } from './user';
 import { handleImages } from './images';
 import { handleBoards } from './boards';
 import { handleBoardWebSocket } from './wsBoard';
+import { handleLegal } from './legal';
 
 export { BoardRoom } from './board-room-do';
 
@@ -29,6 +30,9 @@ async function routeRequest(request: Request, env: Env, pathname: string): Promi
   if (pathname === '/health' && request.method === 'GET') {
     return jsonResponse(request, { ok: true, service: 'boardify-api' });
   }
+
+  const legalResp = handleLegal(request, env, pathname);
+  if (legalResp) return legalResp;
 
   const forImages = stripApiPrefix(pathname);
   if (

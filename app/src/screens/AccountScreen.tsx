@@ -399,6 +399,44 @@ export default function AccountScreen() {
           </View>
         </View>
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Legal</Text>
+        <View style={styles.cardWrap}>
+          <View style={styles.cardShadow} />
+          <View style={styles.card}>
+            <ConfigRow
+              label="Privacy Policy"
+              sublabel="How we handle your data"
+              rowStyle={styles.configRow}
+              labelStyle={styles.configLabel}
+              sublabelStyle={styles.configSublabel}
+              labelBlockStyle={styles.configLabelBlock}
+              chevronColor={colors.iconChevron}
+              onPress={() => {
+                hapticLight();
+                router.push('/privacy');
+              }}
+              showChevron
+            />
+            <ConfigRowDivider dividerStyle={styles.configDivider} />
+            <ConfigRow
+              label="Terms of Service"
+              sublabel="Rules for using Boardify"
+              rowStyle={styles.configRow}
+              labelStyle={styles.configLabel}
+              sublabelStyle={styles.configSublabel}
+              labelBlockStyle={styles.configLabelBlock}
+              chevronColor={colors.iconChevron}
+              onPress={() => {
+                hapticLight();
+                router.push('/terms');
+              }}
+              showChevron
+            />
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 
