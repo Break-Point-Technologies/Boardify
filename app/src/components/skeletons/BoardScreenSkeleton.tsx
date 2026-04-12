@@ -10,7 +10,6 @@ const COL_W = 280;
 const COL_GAP = 16;
 const CARD_H = 88;
 
-/** Matches BoardColumn: COLUMN_SHIFT 5, column shadow, grey inner shell. */
 const COL_SHIFT = 5;
 
 export function BoardScreenSkeleton({

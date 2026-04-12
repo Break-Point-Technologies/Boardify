@@ -1,7 +1,6 @@
 import type { Env } from './bindings';
 import { buildCorsHeaders, jsonResponse } from './http';
 
-/** Keep in sync with app/src/legal/metadata.ts LEGAL_POLICY_EFFECTIVE (ISO for machine use). */
 export const LEGAL_EFFECTIVE_ISO = '2026-04-10';
 
 const DEFAULT_WEB_APP = 'https://boardify.mybreakpoint.app';
@@ -19,11 +18,6 @@ function stripApiPrefix(pathname: string): string {
   return pathname;
 }
 
-/**
- * Canonical links for stores, emails, and API clients.
- * GET /api/legal/privacy | /api/legal/terms → 302 to the web app.
- * ?format=json → JSON metadata (CORS-aware).
- */
 export function handleLegal(request: Request, env: Env, pathname: string): Response | null {
   if (request.method !== 'GET') return null;
   const rest = stripApiPrefix(pathname);

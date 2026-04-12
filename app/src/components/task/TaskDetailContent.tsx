@@ -111,7 +111,6 @@ function createTaskDetailStyles(colors: ThemeColors) {
     paddingBottom: 8,
     backgroundColor: 'transparent',
   },
-  /** Flush row: no stack margin / top hairline; padding nudges copy below the chevron row. */
   memberPickerInsetFlush: {
     marginTop: 6,
     paddingTop: 10,

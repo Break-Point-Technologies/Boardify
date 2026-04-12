@@ -43,11 +43,10 @@ export async function persistInboxMessages(userId: string, messages: ApiInboxMes
   try {
     await AsyncStorage.setItem(storageKey(userId), JSON.stringify(messages));
   } catch {
-    // non-fatal
+    // ignore
   }
 }
 
-/** Fetches inbox and writes memory + disk. Safe to call on app launch; duplicates for the same user share one flight. */
 export function prefetchInboxMessagesForUser(userId: string): Promise<void> {
   const existing = prefetchInflight.get(userId);
   if (existing) return existing;
@@ -56,7 +55,7 @@ export function prefetchInboxMessagesForUser(userId: string): Promise<void> {
       const { messages } = await getUserMessages({ limit: 80 });
       await persistInboxMessages(userId, messages);
     } catch {
-      // non-fatal — Messages screen will retry
+      // ignore
     } finally {
       prefetchInflight.delete(userId);
     }

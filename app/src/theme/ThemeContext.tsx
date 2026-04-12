@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Appearance, Platform, useColorScheme as useRNColorScheme } from 'react-native';
@@ -21,7 +22,6 @@ type ThemeContextValue = {
   resolvedScheme: ResolvedScheme;
   colors: ThemeColors;
   setThemePreference: (next: ThemePreference) => Promise<void>;
-  /** Re-read AsyncStorage (e.g. after external writes) */
   refreshThemeFromStorage: () => Promise<void>;
 };
 
@@ -42,6 +42,7 @@ function resolveScheme(
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useRNColorScheme();
   const [preference, setPreference] = useState<ThemePreference>('system');
+  const prevPreferenceRef = useRef<ThemePreference | null>(null);
 
   const refreshThemeFromStorage = useCallback(async () => {
     const p = await loadAccountUiPrefs();
@@ -88,12 +89,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (Platform.OS !== 'ios' && Platform.OS !== 'android') return;
-    // Native tabs host (react-native-screens) uses UIColor.systemBackgroundColor for its
-    // container until nativeContainerStyle is wired through expo-router. Align the window
-    // trait collection with the user's theme preference so system surfaces match the app.
+    const prev = prevPreferenceRef.current;
+    prevPreferenceRef.current = preference;
+
     if (preference === 'system') {
-      Appearance.setColorScheme('unspecified');
-    } else if (preference === 'dark') {
+      if (prev === 'light' || prev === 'dark') {
+        Appearance.setColorScheme('unspecified');
+      }
+      return;
+    }
+    if (preference === 'dark') {
       Appearance.setColorScheme('dark');
     } else {
       Appearance.setColorScheme('light');
@@ -121,7 +126,6 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
-/** Safe when provider is optional (e.g. tests); returns light tokens. */
 export function useThemeOptional(): ThemeContextValue | null {
   return useContext(ThemeContext);
 }

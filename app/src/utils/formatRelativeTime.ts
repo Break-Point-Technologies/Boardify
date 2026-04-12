@@ -1,4 +1,3 @@
-/** Short relative labels for message lists (matches common inbox UX). */
 export function formatRelativeTimeShort(iso: string): string {
   const d = new Date(iso);
   const t = d.getTime();

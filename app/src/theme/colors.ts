@@ -1,6 +1,5 @@
 export type ResolvedScheme = 'light' | 'dark';
 
-/** Semantic colors — use via `useTheme().colors`; avoid raw hex in UI. */
 export type ThemeColors = {
   canvas: string;
   surface: string;
@@ -13,7 +12,6 @@ export type ThemeColors = {
   iconPrimary: string;
   iconMuted: string;
   iconChevron: string;
-  /** Hard-shadow / offset layer behind neu cards */
   shadowFill: string;
   shadowFillColumn: string;
   columnSurface: string;
@@ -21,10 +19,8 @@ export type ThemeColors = {
   cardFaceOnColumn: string;
   inputBackground: string;
   overlayScrim: string;
-  /** Stack modals that use the “cream” sheet (login, settings, …) */
   modalCreamCanvas: string;
   modalCreamHeaderTint: string;
-  /** High-contrast sheet (e.g. some overlays) */
   modalNavyCanvas: string;
   modalNavyHeaderTint: string;
   success: string;
@@ -57,13 +53,11 @@ export type ThemeColors = {
   timelineLine: string;
   chartAxis: string;
   chartGrid: string;
-  /** iOS header blur / material hint */
   headerBlurMaterial: 'light' | 'dark' | 'systemChromeMaterialLight' | 'systemChromeMaterialDark';
   dropZoneBorder: string;
   dropZoneBg: string;
   focusDotInactive: string;
   boardLink: string;
-  /** “Done” / positive action text on panels */
   successEmphasis: string;
   primaryButtonBg: string;
   primaryButtonText: string;

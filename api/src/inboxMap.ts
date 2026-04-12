@@ -1,5 +1,3 @@
-/** Maps board_audit_log rows to Messages tab items (filters + copy). */
-
 export type InboxMessageKind = 'mention' | 'assign' | 'comment' | 'invite' | 'board';
 
 export type AuditRow = {

@@ -397,7 +397,6 @@ export default function MessagesScreen() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const rawMessagesRef = useRef<ApiInboxMessage[]>([]);
   rawMessagesRef.current = rawMessages;
-  /** True once we have a persisted inbox snapshot (including an empty list) or a successful fetch. */
   const inboxDiskCachePresentRef = useRef(false);
   const isFocused = useIsFocused();
 

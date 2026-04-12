@@ -1,7 +1,6 @@
 import { Linking } from 'react-native';
 import type { Router } from 'expo-router';
 
-/** Parse invite token from `https://host/invite/TOKEN`, `boardify://invite/TOKEN`, or Expo dev URLs containing `/invite/`. */
 export function extractInviteTokenFromUrl(url: string): string | null {
   const trimmed = url?.trim();
   if (!trimmed) return null;
@@ -24,7 +23,7 @@ export function extractInviteTokenFromUrl(url: string): string | null {
       return decodeURIComponent(parts[i + 1]);
     }
   } catch {
-    /* ignore */
+    // ignore
   }
   return null;
 }

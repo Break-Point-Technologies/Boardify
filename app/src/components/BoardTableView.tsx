@@ -86,7 +86,6 @@ const TABLE_LABEL_PRESETS: TaskLabel[] = [
   { id: 'lbl-docs', name: 'Docs', color: '#bfdbfe' },
 ];
 
-/** Dark ink on pastel pill fills — must not follow theme textPrimary (light in dark mode). */
 const STATUS_PILL_LABEL = '#0a0a0a';
 
 function statusPillStyle(columnTitle: string): { bg: string; text: string } {

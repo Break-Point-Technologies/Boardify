@@ -85,7 +85,6 @@ export type ApiInboxMessage = {
   headline: string;
   detail: string;
   accentColor: string | null;
-  /** Present for pending board email invites (accept/decline in app without token). */
   invitationId?: string;
 };
 

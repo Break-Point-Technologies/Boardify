@@ -106,7 +106,6 @@ const FOCUS_LIST_CARD_WIDTH_RATIO = 0.86;
 const FOCUS_LIST_CAROUSEL_GAP = 12;
 const FOCUS_PAGE_DOT_SLOTS = 10;
 
-/** Inactive-dot visuals; tail shrink only when exactly {@link FOCUS_PAGE_DOT_SLOTS} dots are on screen. */
 function focusPagerDotVisual(
   slotIndex: number,
   visibleDotCount: number,

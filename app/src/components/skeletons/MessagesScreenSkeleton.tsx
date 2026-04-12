@@ -111,7 +111,6 @@ function RowSkeleton({
   );
 }
 
-/** Card rows only; parent screen supplies title, subtitle, and “Recent” like loaded state. */
 export function MessagesScreenSkeleton() {
   return (
     <>

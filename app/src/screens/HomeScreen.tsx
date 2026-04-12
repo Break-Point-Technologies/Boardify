@@ -23,7 +23,7 @@ import { sortBoards, useBoardSort } from '../contexts/BoardSortContext';
 import type { BoardListItem } from '../data/boards';
 import { listBoards } from '../api/boards';
 import { apiBoardToListItem } from '../api/boardMappers';
-/** Neu list row, same building blocks as Messages inbox rows (not glass). */
+
 function SignInHeroCta({ onPress }: { onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -84,7 +84,6 @@ export default function HomeScreen() {
   const [boardsError, setBoardsError] = useState<string | null>(null);
   const isWeb = Platform.OS === 'web';
 
-  /** Web: center hero copy. Mobile: center only for signed-out welcome (signed-in keeps left-aligned lists). */
   const heroHeadlineCentered = isWeb || !user;
 
   const homeStyles = useMemo(

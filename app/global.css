@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pre-hydration shell; ThemeProvider syncs html/body background + .dark from resolved scheme. */
 html,
 body {
   background-color: #f5f0e8;
