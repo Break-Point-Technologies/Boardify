@@ -9,6 +9,7 @@ import {
   Modal,
   Animated,
   Dimensions,
+  type ViewStyle,
 } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -291,20 +292,16 @@ export function WebTopNav({
   return (
     <>
       <View
-        style={{
-          height: totalHeight,
-          paddingTop: insets.top,
-          backgroundColor: colors.boardHeaderBg,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: colors.divider,
-          ...(Platform.OS === 'web'
-            ? ({
-                position: 'sticky' as const,
-                top: 0,
-                zIndex: 50,
-              } as const)
-            : {}),
-        }}
+        style={
+          {
+            height: totalHeight,
+            paddingTop: insets.top,
+            backgroundColor: colors.boardHeaderBg,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.divider,
+            ...(Platform.OS === 'web' ? { position: 'sticky', top: 0, zIndex: 50 } : {}),
+          } as ViewStyle
+        }
       >
         <View
           className="flex-1 flex-row items-center justify-between"

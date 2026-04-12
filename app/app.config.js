@@ -213,6 +213,8 @@ module.exports = {
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
         LSApplicationCategoryType: 'public.app-category.sports',
+        NSPhotoLibraryUsageDescription:
+          'Boardify needs access to your photo library so you can choose a profile picture.',
         CFBundleURLTypes: [
           {
             CFBundleURLSchemes: allUrlSchemes,
@@ -267,6 +269,7 @@ module.exports = {
         'INTERNET',
         'ACCESS_NETWORK_STATE',
         'android.permission.POST_NOTIFICATIONS',
+        'android.permission.READ_MEDIA_IMAGES',
       ],
       versionCode: parseInt(process.env.ANDROID_VERSION_CODE || buildNumber, 10)
     },
