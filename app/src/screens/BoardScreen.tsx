@@ -1200,7 +1200,6 @@ export default function BoardScreen({
         listDraggingRef.current = next;
         setListDragging(next);
         setListHoverInsert(args.columnIndex);
-        // List-drag UI restructures the row; re-measure wraps after layout so hover uses real x/width.
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             remeasureAllColumns();

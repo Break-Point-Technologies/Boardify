@@ -26,6 +26,7 @@ import { useRouter } from 'expo-router';
 import { registerPushNotificationDeepLinks } from '../src/notifications/notificationDeepLink';
 import { registerInviteDeepLinks } from '../src/notifications/inviteDeepLink';
 import { ThemeProvider, useTheme } from '../src/theme';
+import { preloadFeatherFontForWeb } from '../src/utils/webVectorFonts';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -69,7 +70,25 @@ function AppContent() {
   const { colors, resolvedScheme } = useTheme();
   const navState = useRootNavigationState();
   const router = useRouter();
-  const ready = !loading && !!navState?.key;
+  const [webIconFontsReady, setWebIconFontsReady] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await preloadFeatherFontForWeb();
+      } catch {
+        // ignore
+      }
+      if (!cancelled) setWebIconFontsReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ready = !loading && !!navState?.key && webIconFontsReady;
   const [appReady, setAppReady] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
 

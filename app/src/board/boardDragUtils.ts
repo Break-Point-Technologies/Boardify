@@ -59,8 +59,6 @@ export function computeColumnHoverInsertIndex(
     const mid = L.x + L.width / 2;
     if (absX < mid) return i;
   }
-  // No usable layouts yet (e.g. right after switching to the list-drag row). Returning `columnCount`
-  // would park the slot past the last column — often off-screen while horizontal scroll is locked.
   if (!sawAny) return skipColumnIndex ?? 0;
   return columnCount;
 }
