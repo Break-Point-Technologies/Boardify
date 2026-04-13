@@ -364,17 +364,23 @@ function createBoardSettingsStyles(colors: ThemeColors) {
     },
     addTagBtn: {
       marginTop: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
       alignSelf: 'flex-start',
-      gap: 8,
       paddingVertical: 8,
       paddingHorizontal: 4,
+    },
+    addTagBtnRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'nowrap',
+    },
+    addTagBtnIcon: {
+      marginRight: 8,
     },
     addTagText: {
       fontSize: 14,
       fontWeight: '700',
       color: colors.textPrimary,
+      lineHeight: 18,
     },
     toggleRow: {
       flexDirection: 'row',
@@ -732,8 +738,10 @@ function EditableTagList({
           }}
           style={({ pressed }) => [sheet.addTagBtn, pressed && { opacity: 0.75 }]}
         >
-          <Feather name="plus" size={16} color={colors.iconPrimary} />
-          <Text style={sheet.addTagText}>{addLabel}</Text>
+          <View style={sheet.addTagBtnRow}>
+            <Feather name="plus" size={16} color={colors.iconPrimary} style={sheet.addTagBtnIcon} />
+            <Text style={sheet.addTagText}>{addLabel}</Text>
+          </View>
         </Pressable>
       </SettingsInsetChoiceList>
 
