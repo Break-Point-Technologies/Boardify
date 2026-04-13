@@ -477,6 +477,49 @@ function createBoardSettingsStyles(colors: ThemeColors) {
     labelDone: {
       color: colors.textPrimary,
     },
+    taxonomyCollapsibleBlock: {
+      marginBottom: 4,
+    },
+    taxonomyCollapsibleBlockSpaced: {
+      marginTop: 18,
+      marginBottom: 4,
+    },
+    taxonomyCollapsibleHead: {
+      alignSelf: 'stretch',
+      width: '100%',
+      marginBottom: 10,
+    },
+    taxonomyCollapsibleHeadPressed: {
+      opacity: 0.88,
+    },
+    taxonomyCollapsibleHeadInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      flexWrap: 'nowrap',
+      gap: 8,
+      minHeight: 28,
+    },
+    taxonomyCollapsibleHeadLeft: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    taxonomyCollapsibleTitle: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    taxonomyCollapsibleChevron: {
+      flexShrink: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
 }
 
@@ -745,9 +788,13 @@ export default function BoardSettingsScreen() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersLoadFailed, setMembersLoadFailed] = useState(false);
   const [membersListExpanded, setMembersListExpanded] = useState(false);
+  const [labelsTaxonomyOpen, setLabelsTaxonomyOpen] = useState(false);
+  const [prioritiesTaxonomyOpen, setPrioritiesTaxonomyOpen] = useState(false);
 
   useEffect(() => {
     setMembersListExpanded(false);
+    setLabelsTaxonomyOpen(false);
+    setPrioritiesTaxonomyOpen(false);
   }, [boardId]);
 
   useEffect(() => {
@@ -1176,30 +1223,90 @@ export default function BoardSettingsScreen() {
               <Text style={styles.sublabel}>
                 Customize selectable labels and priorities for cards across this board.
               </Text>
-              <Text style={styles.metaLabel}>Labels</Text>
-              <EditableTagList
-                sheet={styles}
-                colors={colors}
-                title="Labels"
-                hint="Rename, recolor, delete, or add labels."
-                addLabel="Add label"
-                emptyLabel="New label"
-                idPrefix="lb"
-                tags={settings.boardLabels}
-                onChange={(next) => patch({ boardLabels: next })}
-              />
-              <Text style={[styles.metaLabel, styles.gapTop]}>Priorities</Text>
-              <EditableTagList
-                sheet={styles}
-                colors={colors}
-                title="Priorities"
-                hint="Rename, recolor, delete, or add priorities."
-                addLabel="Add priority"
-                emptyLabel="New priority"
-                idPrefix="pr"
-                tags={settings.boardPriorities}
-                onChange={(next) => patch({ boardPriorities: next })}
-              />
+              <View style={styles.taxonomyCollapsibleBlock}>
+                <Pressable
+                  onPress={() => {
+                    hapticLight();
+                    setLabelsTaxonomyOpen((o) => !o);
+                  }}
+                  style={({ pressed }) => [
+                    styles.taxonomyCollapsibleHead,
+                    pressed && styles.taxonomyCollapsibleHeadPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: labelsTaxonomyOpen }}
+                  accessibilityLabel={`Labels, ${labelsTaxonomyOpen ? 'expanded' : 'collapsed'}`}
+                >
+                  <View style={styles.taxonomyCollapsibleHeadInner}>
+                    <View style={styles.taxonomyCollapsibleHeadLeft}>
+                      <Feather name="tag" size={16} color={colors.iconMuted} />
+                      <Text style={styles.taxonomyCollapsibleTitle}>Labels</Text>
+                    </View>
+                    <View style={styles.taxonomyCollapsibleChevron} pointerEvents="none">
+                      <Feather
+                        name={labelsTaxonomyOpen ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
+                {labelsTaxonomyOpen ? (
+                  <EditableTagList
+                    sheet={styles}
+                    colors={colors}
+                    title="Labels"
+                    hint="Rename, recolor, delete, or add labels."
+                    addLabel="Add label"
+                    emptyLabel="New label"
+                    idPrefix="lb"
+                    tags={settings.boardLabels}
+                    onChange={(next) => patch({ boardLabels: next })}
+                  />
+                ) : null}
+              </View>
+              <View style={styles.taxonomyCollapsibleBlockSpaced}>
+                <Pressable
+                  onPress={() => {
+                    hapticLight();
+                    setPrioritiesTaxonomyOpen((o) => !o);
+                  }}
+                  style={({ pressed }) => [
+                    styles.taxonomyCollapsibleHead,
+                    pressed && styles.taxonomyCollapsibleHeadPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: prioritiesTaxonomyOpen }}
+                  accessibilityLabel={`Priorities, ${prioritiesTaxonomyOpen ? 'expanded' : 'collapsed'}`}
+                >
+                  <View style={styles.taxonomyCollapsibleHeadInner}>
+                    <View style={styles.taxonomyCollapsibleHeadLeft}>
+                      <Feather name="flag" size={16} color={colors.iconMuted} />
+                      <Text style={styles.taxonomyCollapsibleTitle}>Priorities</Text>
+                    </View>
+                    <View style={styles.taxonomyCollapsibleChevron} pointerEvents="none">
+                      <Feather
+                        name={prioritiesTaxonomyOpen ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
+                {prioritiesTaxonomyOpen ? (
+                  <EditableTagList
+                    sheet={styles}
+                    colors={colors}
+                    title="Priorities"
+                    hint="Rename, recolor, delete, or add priorities."
+                    addLabel="Add priority"
+                    emptyLabel="New priority"
+                    idPrefix="pr"
+                    tags={settings.boardPriorities}
+                    onChange={(next) => patch({ boardPriorities: next })}
+                  />
+                ) : null}
+              </View>
             </SettingsSection>
 
             <SettingsSection sheet={styles} title="Productivity">
