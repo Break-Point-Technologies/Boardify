@@ -258,26 +258,33 @@ function createTaskDetailStyles(colors: ThemeColors) {
     lineHeight: 18,
   },
   labelsCollapsibleHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: 'stretch',
+    width: '100%',
     marginBottom: 10,
-    minHeight: 28,
   },
   labelsCollapsibleHeadPressed: {
     opacity: 0.88,
   },
+  labelsCollapsibleHeadInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    flexWrap: 'nowrap',
+    gap: 8,
+    minHeight: 28,
+  },
   labelsCollapsibleHeadLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexShrink: 0,
-  },
-  labelsSummarySpacer: {
-    flex: 1,
-    minWidth: 0,
   },
   labelsCollapsibleChevron: {
     flexShrink: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   labelList: {
     marginTop: 0,
@@ -1013,17 +1020,19 @@ export function TaskDetailContent({ task, onChange }: Props) {
             accessibilityState={{ expanded: labelsSectionOpen }}
             accessibilityLabel={`Labels, ${labelsSectionOpen ? 'expanded' : 'collapsed'}`}
           >
-            <View style={styles.labelsCollapsibleHeadLeft}>
-              <Feather name="tag" size={16} color={colors.iconMuted} />
-              <Text style={styles.sectionTitle}>Labels</Text>
+            <View style={styles.labelsCollapsibleHeadInner}>
+              <View style={styles.labelsCollapsibleHeadLeft}>
+                <Feather name="tag" size={16} color={colors.iconMuted} />
+                <Text style={styles.sectionTitle}>Labels</Text>
+              </View>
+              <View style={styles.labelsCollapsibleChevron} pointerEvents="none">
+                <Feather
+                  name={labelsSectionOpen ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </View>
             </View>
-            <View style={styles.labelsSummarySpacer} />
-            <Feather
-              name={labelsSectionOpen ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.textSecondary}
-              style={styles.labelsCollapsibleChevron}
-            />
           </Pressable>
           {labelsSectionOpen ? (
             <View style={styles.sectionCardWrap}>
