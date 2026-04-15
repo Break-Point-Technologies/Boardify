@@ -246,11 +246,15 @@ export default function BoardAiScreen() {
 
   const openRecommended = useCallback(() => {
     if (!boardId || !nextTask?.cardId) return;
-    DeviceEventEmitter.emit(BOARD_AI_OPEN_CARD_EVENT, {
-      boardId,
-      cardId: nextTask.cardId,
-    });
+    const cardId = nextTask.cardId;
     close();
+    // Wait until the sheet dismissal finishes so the board modal can open safely.
+    setTimeout(() => {
+      DeviceEventEmitter.emit(BOARD_AI_OPEN_CARD_EVENT, {
+        boardId,
+        cardId,
+      });
+    }, Platform.OS === 'ios' ? 360 : 220);
   }, [boardId, close, nextTask?.cardId]);
 
   const runInsights = useCallback(async () => {
