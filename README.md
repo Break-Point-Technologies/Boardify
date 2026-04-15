@@ -1,6 +1,48 @@
 # Boardify
 
-Monorepo for **Boardify**: a collaborative board / task app built with **Expo (React Native)** for iOS, Android, and web, backed by a **Cloudflare Workers** API, **D1**, **R2**, and related Cloudflare primitives.
+**Boardify** is an AI-assisted collaborative planning app designed for people who like the flexibility of kanban boards, but need better guidance on what to do next.
+
+It combines classic board/list/task workflows with practical AI support (task prioritization, next-task recommendations, and suggested subtasks) so teams and solo builders can spend less time triaging work and more time shipping.
+
+This repository is a full-stack monorepo with an **Expo (React Native)** client (iOS, Android, and web) and a **Cloudflare-native backend** (Workers, D1, R2, Queues, and WebSockets).
+
+## Why this project exists
+
+Most task apps are great at storing tasks but weak at helping users decide:
+- What should I work on first?
+- Which deadlines are risky?
+- How do I break this down into concrete steps?
+
+Boardify focuses on that gap. The product goal is to keep planning lightweight while still giving users smart recommendations, clear visibility, and fast collaboration.
+
+## Highlights
+
+- **Full-stack architecture:** React Native + Expo Router frontend, Cloudflare Workers API, D1 relational schema, R2 media storage.
+- **Real-time collaboration:** board updates via WebSockets.
+- **AI productivity features:** list-level prioritization, next-task recommendation, and subtask generation with daily usage limits.
+- **Background automation:** queued and scheduled jobs for reminders and digest-style experiences.
+- **Cross-platform UX:** mobile-first UI that also runs on web.
+
+## Product capabilities
+
+- Board/list/task organization with drag-and-drop interactions.
+- Task metadata such as due dates, labels, priorities, assignees, checklist items, and attachments.
+- Team collaboration features including board sharing and invitations.
+- Notification and settings flows for account and board preferences.
+- AI actions with safe apply/revert behavior for generated reorder changes.
+
+## Architecture at a glance
+
+- **Client (`app/`)**
+  - Expo + React Native + Expo Router
+  - Shared design system and cross-platform components
+  - Auth/session handling and board interaction flows
+- **API (`api/`)**
+  - Cloudflare Workers endpoints for auth, boards, tasks, media, and AI
+  - Real-time updates and notification-related services
+- **Data (`db/`)**
+  - D1 schema and migration SQL
+  - Relational models for users, boards, lists, tasks, memberships, and audit trails
 
 | Directory | Contents |
 |-----------|----------|
