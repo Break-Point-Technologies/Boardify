@@ -813,12 +813,24 @@ export default function BoardScreen({
         if (j >= 0) {
           const fallbackW = Math.round(Math.min(screenW * 0.92, 400));
           const fallbackH = 100;
-          const nextLayout = layout ?? {
-            x: Math.round((screenW - fallbackW) / 2),
-            y: Math.round(screenH * 0.52),
-            width: fallbackW,
-            height: fallbackH,
-          };
+          const colLayout = columnLayoutsRef.current[i];
+          const colScrollY = columnScrollYRef.current[i] ?? 0;
+          const estimatedFromColumn =
+            !layout && colLayout
+              ? {
+                  x: Math.round(colLayout.x + 8),
+                  y: Math.round(colLayout.y + Math.max(0, j * BOARD_CARD_ROW_HEIGHT - colScrollY)),
+                  width: Math.round(Math.max(180, Math.min(colLayout.width - 16, fallbackW))),
+                  height: BOARD_CARD_ROW_HEIGHT,
+                }
+              : null;
+          const nextLayout = layout ??
+            estimatedFromColumn ?? {
+              x: Math.round((screenW - fallbackW) / 2),
+              y: Math.round(screenH * 0.52),
+              width: fallbackW,
+              height: fallbackH,
+            };
           setExpanded({
             columnTitle: columns[i].title,
             layout: {
