@@ -7,6 +7,8 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  Alert,
+  ActivityIndicator,
   Dimensions,
   UIManager,
   useWindowDimensions,
@@ -36,7 +38,7 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { hapticLight, hapticMedium } from '../utils/haptics';
 import { consumePendingDashboardAddTile } from '../utils/dashboardAddTileNavigation';
 import { BoardColumn } from '../components/BoardColumn';
@@ -61,6 +63,9 @@ import {
   createCard,
   createList,
   patchCard,
+  runBoardAiPrioritization,
+  runBoardAiNextTask,
+  runBoardAiListInsights,
   listBoardMembers,
   getDashboardTiles,
   putDashboardTiles,
@@ -81,6 +86,12 @@ import { BOARD_DROP_ZONE_CARD_RADIUS } from '../board/boardDropZoneStyles';
 import { useTheme } from '../theme';
 import type { ThemeColors } from '../theme/colors';
 import { BOARD_PENDING_RESTORE_EVENT, type BoardPendingRestorePayload } from '../board/boardRestoreEvents';
+import {
+  BOARD_AI_APPLY_ORDER_EVENT,
+  BOARD_AI_OPEN_CARD_EVENT,
+  type BoardAiApplyOrderPayload,
+  type BoardAiOpenCardPayload,
+} from '../board/boardAiEvents';
 import { useBoardWebSocket } from '../hooks/useBoardWebSocket';
 import {
   BOARD_CARD_ROW_HEIGHT,
@@ -167,6 +178,41 @@ type ListDraggingState = {
   height: number;
 };
 
+type AiRecommendation = {
+  cardId: string | null;
+  reason: string;
+  subtasks: string[];
+};
+
+type AiInsights = {
+  summary: string;
+  wins: string[];
+  risks: string[];
+  suggestions: string[];
+};
+
+function cloneBoardColumns(columns: BoardColumnData[]): BoardColumnData[] {
+  return columns.map((col) => ({ ...col, cards: [...col.cards] }));
+}
+
+function reorderColumnsByAiOrder(columns: BoardColumnData[], order: string[]): BoardColumnData[] {
+  if (order.length === 0) return columns;
+  const rank = new Map<string, number>();
+  order.forEach((id, idx) => rank.set(id, idx));
+  return columns.map((col) => {
+    const cards = [...col.cards];
+    cards.sort((a, b) => {
+      const ra = rank.get(a.id);
+      const rb = rank.get(b.id);
+      if (ra == null && rb == null) return 0;
+      if (ra == null) return 1;
+      if (rb == null) return -1;
+      return ra - rb;
+    });
+    return { ...col, cards };
+  });
+}
+
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -198,6 +244,7 @@ export default function BoardScreen({
   onOpenBoardNotifications,
   glassBottomBar,
 }: BoardScreenProps) {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createBoardScreenStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -485,6 +532,14 @@ export default function BoardScreen({
   const [inlineAddListDraft, setInlineAddListDraft] = useState('');
   const [dashboardTiles, setDashboardTiles] = useState<DashboardTile[]>([]);
   const [dashboardTilesSynced, setDashboardTilesSynced] = useState(false);
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [aiBusyAction, setAiBusyAction] = useState<null | 'prioritize' | 'next' | 'insights'>(null);
+  const [aiMenuListId, setAiMenuListId] = useState<string | null>(null);
+  const [aiRecommendation, setAiRecommendation] = useState<AiRecommendation | null>(null);
+  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
+  const [aiSnapshot, setAiSnapshot] = useState<BoardColumnData[] | null>(null);
+  const [aiChangeLabel, setAiChangeLabel] = useState('');
+  const [aiReorderNotes, setAiReorderNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!boardId) return;
@@ -807,6 +862,33 @@ export default function BoardScreen({
     return null;
   }, [columns, expanded]);
 
+  const aiRecommendedCardMeta = useMemo(() => {
+    const cardId = aiRecommendation?.cardId;
+    if (!cardId) return null;
+    for (const col of columns) {
+      const card = col.cards.find((c) => c.id === cardId);
+      if (card) {
+        return {
+          cardId,
+          cardTitle: card.title,
+          listTitle: col.title,
+        };
+      }
+    }
+    return null;
+  }, [aiRecommendation?.cardId, columns]);
+
+  const aiPinnedNote = useMemo(() => {
+    const first = columns[0]?.cards[0];
+    if (!first) return '';
+    return aiReorderNotes[first.id] ?? '';
+  }, [aiReorderNotes, columns]);
+
+  const aiMenuListTitle = useMemo(() => {
+    if (!aiMenuListId) return null;
+    return columns.find((c) => c.id === aiMenuListId)?.title ?? null;
+  }, [aiMenuListId, columns]);
+
   useEffect(() => {
     if (!expanded) {
       prevExpandedCardIdRef.current = null;
@@ -1022,6 +1104,163 @@ export default function BoardScreen({
   const handleDashboardRemoveTile = useCallback((id: string) => {
     setDashboardTiles((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const handleAiError = useCallback((e: unknown) => {
+    const status = typeof e === 'object' && e && 'status' in e ? Number((e as { status?: unknown }).status) : 0;
+    if (status === 429) {
+      Alert.alert('AI request limit reached', 'You are out of AI requests for today. Try again tomorrow.');
+      return;
+    }
+    const message =
+      e instanceof Error ? e.message : 'AI could not complete that request. Please try again.';
+    Alert.alert('AI request failed', message);
+  }, []);
+
+  const persistVisibleOrder = useCallback(
+    async (nextColumns: BoardColumnData[]) => {
+      await Promise.all(
+        nextColumns.map((col) => persistCardOrderInList(col.id, col.cards.map((c) => c.id)))
+      );
+    },
+    [persistCardOrderInList]
+  );
+
+  const applyAiOrderFromPayload = useCallback(
+    async (payload: BoardAiApplyOrderPayload) => {
+      if (payload.boardId !== boardId || !Array.isArray(payload.order) || payload.order.length === 0) {
+        return;
+      }
+      const before = cloneBoardColumns(columnsRef.current);
+      const proposed = reorderColumnsByAiOrder(before, payload.order);
+      const changed = proposed.some((col, idx) =>
+        col.cards.some((card, cardIdx) => before[idx]?.cards[cardIdx]?.id !== card.id)
+      );
+      if (!changed) return;
+      setAiSnapshot(before);
+      setAiChangeLabel(
+        payload.listId ? 'AI task prioritization for this list' : 'AI task prioritization'
+      );
+      setAiReorderNotes(payload.notes ?? {});
+      setColumns(proposed);
+      try {
+        await persistVisibleOrder(proposed);
+      } catch {
+        await refresh();
+      }
+    },
+    [boardId, persistVisibleOrder, refresh, setColumns]
+  );
+
+  useEffect(() => {
+    const applySub = DeviceEventEmitter.addListener(BOARD_AI_APPLY_ORDER_EVENT, (raw: unknown) => {
+      const payload = raw as BoardAiApplyOrderPayload;
+      void applyAiOrderFromPayload(payload);
+    });
+    const openSub = DeviceEventEmitter.addListener(BOARD_AI_OPEN_CARD_EVENT, (raw: unknown) => {
+      const payload = raw as BoardAiOpenCardPayload;
+      if (!payload?.cardId || payload.boardId !== boardId) return;
+      handleCalendarOpenTask(payload.cardId);
+    });
+    return () => {
+      applySub.remove();
+      openSub.remove();
+    };
+  }, [applyAiOrderFromPayload, boardId, handleCalendarOpenTask]);
+
+  const runAiPrioritization = useCallback(async () => {
+    if (aiBusyAction) return;
+    setAiMenuOpen(false);
+    const targetListId = aiMenuListId;
+    const before = cloneBoardColumns(columnsRef.current);
+    setAiBusyAction('prioritize');
+    try {
+      const { order, notes } = await runBoardAiPrioritization(boardId, {
+        maxCards: 45,
+        listIds: targetListId ? [targetListId] : undefined,
+      });
+      if (!order || order.length === 0) {
+        Alert.alert('Nothing to prioritize', 'AI did not find enough tasks to reorder right now.');
+        return;
+      }
+      const proposed = reorderColumnsByAiOrder(before, order);
+      const changed = proposed.some((col, idx) =>
+        col.cards.some((card, cardIdx) => before[idx]?.cards[cardIdx]?.id !== card.id)
+      );
+      if (!changed) {
+        Alert.alert('Already prioritized', 'Your list order already looks optimal based on current data.');
+        return;
+      }
+      setAiSnapshot(before);
+      setAiChangeLabel(targetListId ? 'AI task prioritization for this list' : 'AI task prioritization');
+      setAiReorderNotes(notes ?? {});
+      setColumns(proposed);
+      await persistVisibleOrder(proposed);
+    } catch (e) {
+      handleAiError(e);
+    } finally {
+      setAiBusyAction(null);
+    }
+  }, [aiBusyAction, aiMenuListId, boardId, handleAiError, persistVisibleOrder, setColumns]);
+
+  const runAiNextTask = useCallback(async () => {
+    if (aiBusyAction) return;
+    setAiMenuOpen(false);
+    const targetListId = aiMenuListId;
+    setAiBusyAction('next');
+    try {
+      const rec = await runBoardAiNextTask(boardId, {
+        maxCards: 45,
+        listIds: targetListId ? [targetListId] : undefined,
+      });
+      setAiRecommendation({
+        cardId: rec.cardId ?? null,
+        reason: rec.reason ?? '',
+        subtasks: Array.isArray(rec.subtasks) ? rec.subtasks : [],
+      });
+    } catch (e) {
+      handleAiError(e);
+    } finally {
+      setAiBusyAction(null);
+    }
+  }, [aiBusyAction, aiMenuListId, boardId, handleAiError]);
+
+  const runAiInsights = useCallback(async () => {
+    if (aiBusyAction) return;
+    setAiMenuOpen(false);
+    const targetListId = aiMenuListId;
+    setAiBusyAction('insights');
+    try {
+      const insights = await runBoardAiListInsights(boardId, {
+        maxCards: 45,
+        listIds: targetListId ? [targetListId] : undefined,
+      });
+      setAiInsights(insights);
+    } catch (e) {
+      handleAiError(e);
+    } finally {
+      setAiBusyAction(null);
+    }
+  }, [aiBusyAction, aiMenuListId, boardId, handleAiError]);
+
+  const keepAiChanges = useCallback(() => {
+    setAiSnapshot(null);
+    setAiChangeLabel('');
+    setAiReorderNotes({});
+  }, []);
+
+  const revertAiChanges = useCallback(async () => {
+    if (!aiSnapshot) return;
+    const restore = cloneBoardColumns(aiSnapshot);
+    setColumns(restore);
+    setAiSnapshot(null);
+    setAiChangeLabel('');
+    setAiReorderNotes({});
+    try {
+      await persistVisibleOrder(restore);
+    } catch {
+      await refresh();
+    }
+  }, [aiSnapshot, persistVisibleOrder, refresh, setColumns]);
 
   const tableRowOverlayStyle = useAnimatedStyle(() => ({
     transform: [
@@ -1838,6 +2077,16 @@ export default function BoardScreen({
                           title={col.title}
                           cards={col.cards}
                           onAddCard={() => openAddCardComposer(i)}
+                          onAiPress={() => {
+                            router.push({
+                              pathname: '/board-ai',
+                              params: {
+                                boardId,
+                                listId: col.id,
+                                listTitle: col.title,
+                              },
+                            });
+                          }}
                           addCardComposerOpen={addCardComposerCol === i}
                           addCardComposerValue={addCardComposerCol === i ? addCardComposerDraft : ''}
                           onAddCardComposerChangeText={setAddCardComposerDraft}
@@ -1896,6 +2145,16 @@ export default function BoardScreen({
                     title={col.title}
                     cards={col.cards}
                     onAddCard={() => openAddCardComposer(i)}
+                    onAiPress={() => {
+                      router.push({
+                        pathname: '/board-ai',
+                        params: {
+                          boardId,
+                          listId: col.id,
+                          listTitle: col.title,
+                        },
+                      });
+                    }}
                     addCardComposerOpen={addCardComposerCol === i}
                     addCardComposerValue={addCardComposerCol === i ? addCardComposerDraft : ''}
                     onAddCardComposerChangeText={setAddCardComposerDraft}
@@ -2223,6 +2482,162 @@ export default function BoardScreen({
               </Text>
             </View>
           </Animated.View>
+        </View>
+      ) : null}
+
+      {aiMenuOpen ? (
+        <View style={styles.aiModalOverlay} pointerEvents="box-none">
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setAiMenuOpen(false);
+              setAiMenuListId(null);
+            }}
+          />
+          <View style={styles.aiMenuCard}>
+            <Text style={styles.aiMenuTitle}>
+              AI for {aiMenuListTitle ? `"${aiMenuListTitle}"` : 'this list'}
+            </Text>
+            <Text style={styles.aiMenuHint}>Each option uses 1 daily AI request.</Text>
+            <Pressable
+              style={({ pressed }) => [styles.aiMenuAction, pressed && styles.aiMenuActionPressed]}
+              onPress={() => void runAiPrioritization()}
+              disabled={aiBusyAction != null}
+            >
+              <Text style={styles.aiMenuActionTitle}>Prioritize tasks</Text>
+              <Text style={styles.aiMenuActionBody}>
+                Reorder based on due dates + complexity cues.
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.aiMenuAction, pressed && styles.aiMenuActionPressed]}
+              onPress={() => void runAiNextTask()}
+              disabled={aiBusyAction != null}
+            >
+              <Text style={styles.aiMenuActionTitle}>Recommend next task</Text>
+              <Text style={styles.aiMenuActionBody}>
+                Pick the best next card with a suggested breakdown.
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.aiMenuAction, pressed && styles.aiMenuActionPressed]}
+              onPress={() => void runAiInsights()}
+              disabled={aiBusyAction != null}
+            >
+              <Text style={styles.aiMenuActionTitle}>List health insights</Text>
+              <Text style={styles.aiMenuActionBody}>
+                Highlights wins, risks, and focused improvements.
+              </Text>
+            </Pressable>
+            {aiBusyAction ? (
+              <View style={styles.aiMenuBusyRow}>
+                <ActivityIndicator size="small" color={colors.iconPrimary} />
+                <Text style={styles.aiMenuBusyText}>Working...</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {aiSnapshot ? (
+        <View style={[styles.aiChangeBar, { bottom: insets.bottom + 10 }]}>
+          <Text style={styles.aiChangeBarTitle}>{aiChangeLabel} applied</Text>
+          <Text style={styles.aiChangeBarBody}>Review and keep, or revert instantly.</Text>
+          {aiPinnedNote ? <Text style={styles.aiChangeBarNote}>Top task reason: {aiPinnedNote}</Text> : null}
+          <View style={styles.aiChangeBarActions}>
+            <Pressable onPress={keepAiChanges} style={styles.aiChangeAction}>
+              <Text style={styles.aiChangeActionKeep}>Keep</Text>
+            </Pressable>
+            <Pressable onPress={() => void revertAiChanges()} style={styles.aiChangeAction}>
+              <Text style={styles.aiChangeActionRevert}>Revert</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {aiRecommendation ? (
+        <View style={styles.aiModalOverlay} pointerEvents="box-none">
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAiRecommendation(null)} />
+          <View style={styles.aiModalCard}>
+            <Text style={styles.aiModalTitle}>Next task recommendation</Text>
+            {aiRecommendedCardMeta ? (
+              <>
+                <Text style={styles.aiModalTaskTitle}>{aiRecommendedCardMeta.cardTitle}</Text>
+                <Text style={styles.aiModalTaskMeta}>From {aiRecommendedCardMeta.listTitle}</Text>
+              </>
+            ) : (
+              <Text style={styles.aiModalTaskMeta}>No specific card selected.</Text>
+            )}
+            {aiRecommendation.reason ? (
+              <Text style={styles.aiModalBody}>{aiRecommendation.reason}</Text>
+            ) : null}
+            {aiRecommendation.subtasks.length > 0 ? (
+              <View style={styles.aiModalList}>
+                {aiRecommendation.subtasks.map((step, idx) => (
+                  <Text key={`${step}-${idx}`} style={styles.aiModalListItem}>
+                    • {step}
+                  </Text>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.aiModalBodyMuted}>
+                Not enough context for a detailed breakdown yet.
+              </Text>
+            )}
+            {aiRecommendation.cardId && aiRecommendedCardMeta ? (
+              <Pressable
+                style={styles.aiModalPrimaryBtn}
+                onPress={() => {
+                  const targetCardId = aiRecommendation.cardId;
+                  setAiRecommendation(null);
+                  setAiMenuOpen(false);
+                  handleCalendarOpenTask(targetCardId);
+                }}
+              >
+                <Text style={styles.aiModalPrimaryBtnText}>Open task</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {aiInsights ? (
+        <View style={styles.aiModalOverlay} pointerEvents="box-none">
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAiInsights(null)} />
+          <View style={styles.aiModalCard}>
+            <Text style={styles.aiModalTitle}>AI list insights</Text>
+            <Text style={styles.aiModalBody}>{aiInsights.summary}</Text>
+            {aiInsights.wins.length > 0 ? (
+              <View style={styles.aiModalList}>
+                <Text style={styles.aiModalListTitle}>Wins</Text>
+                {aiInsights.wins.map((x, idx) => (
+                  <Text key={`w-${idx}-${x}`} style={styles.aiModalListItem}>
+                    • {x}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            {aiInsights.risks.length > 0 ? (
+              <View style={styles.aiModalList}>
+                <Text style={styles.aiModalListTitle}>Risks</Text>
+                {aiInsights.risks.map((x, idx) => (
+                  <Text key={`r-${idx}-${x}`} style={styles.aiModalListItem}>
+                    • {x}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            {aiInsights.suggestions.length > 0 ? (
+              <View style={styles.aiModalList}>
+                <Text style={styles.aiModalListTitle}>Suggestions</Text>
+                {aiInsights.suggestions.map((x, idx) => (
+                  <Text key={`s-${idx}-${x}`} style={styles.aiModalListItem}>
+                    • {x}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
         </View>
       ) : null}
 
@@ -2595,6 +3010,192 @@ function createBoardScreenStyles(colors: ThemeColors) {
     fontWeight: '600',
     color: colors.textSecondary,
     marginTop: 4,
+  },
+  aiMenuCard: {
+    width: 286,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    padding: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 14,
+  },
+  aiMenuBusyRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiMenuBusyText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  aiMenuTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  aiMenuHint: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textTertiary,
+    marginBottom: 4,
+  },
+  aiMenuAction: {
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: colors.canvas,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  aiMenuActionPressed: {
+    opacity: 0.9,
+  },
+  aiMenuActionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  aiMenuActionBody: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    lineHeight: 17,
+  },
+  aiChangeBar: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    padding: 12,
+    zIndex: 20070,
+  },
+  aiChangeBarTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  aiChangeBarBody: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  aiChangeBarNote: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textTertiary,
+  },
+  aiChangeBarActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 18,
+    marginTop: 8,
+  },
+  aiChangeAction: {
+    paddingVertical: 4,
+  },
+  aiChangeActionKeep: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.successEmphasis,
+  },
+  aiChangeActionRevert: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.danger,
+  },
+  aiModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+  aiModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    padding: 14,
+    maxHeight: '80%',
+  },
+  aiModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  aiModalTaskTitle: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  aiModalTaskMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  aiModalBody: {
+    marginTop: 10,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  aiModalBodyMuted: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textTertiary,
+    fontWeight: '600',
+  },
+  aiModalList: {
+    marginTop: 12,
+    gap: 4,
+  },
+  aiModalListTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+  },
+  aiModalListItem: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  aiModalPrimaryBtn: {
+    marginTop: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryButtonBg,
+    paddingVertical: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiModalPrimaryBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primaryButtonText,
   },
 });
 }

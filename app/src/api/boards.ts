@@ -254,6 +254,39 @@ export async function patchNotificationSettings(
   return res.data as { prefs: Record<string, unknown> };
 }
 
+export async function runBoardAiPrioritization(
+  boardId: string,
+  body?: { listIds?: string[]; maxCards?: number }
+): Promise<{ order: string[]; notes: Record<string, string> }> {
+  const res = await nativeFetch(`/api/boards/${encodeURIComponent(boardId)}/ai/prioritize`, {
+    method: 'POST',
+    data: body ?? {},
+  });
+  return res.data as { order: string[]; notes: Record<string, string> };
+}
+
+export async function runBoardAiNextTask(
+  boardId: string,
+  body?: { listIds?: string[]; maxCards?: number }
+): Promise<{ cardId: string | null; reason: string; subtasks?: string[] }> {
+  const res = await nativeFetch(`/api/boards/${encodeURIComponent(boardId)}/ai/next-task`, {
+    method: 'POST',
+    data: body ?? {},
+  });
+  return res.data as { cardId: string | null; reason: string; subtasks?: string[] };
+}
+
+export async function runBoardAiListInsights(
+  boardId: string,
+  body?: { listIds?: string[]; maxCards?: number }
+): Promise<{ summary: string; wins: string[]; risks: string[]; suggestions: string[] }> {
+  const res = await nativeFetch(`/api/boards/${encodeURIComponent(boardId)}/ai/list-insights`, {
+    method: 'POST',
+    data: body ?? {},
+  });
+  return res.data as { summary: string; wins: string[]; risks: string[]; suggestions: string[] };
+}
+
 export type ApiBoardMemberRow = {
   userId: number;
   role: string;

@@ -3,7 +3,12 @@ import { jsonResponse } from './http';
 import { getCurrentUserFromSession, getAppUrl, getSmtp } from './auth';
 import { getBoardMembership, requireBoardAccess } from './boardAccess';
 import { insertBoardAuditLog } from './auditLog';
-import { handleBoardAiPrioritize, handleBoardAiNextTask, handleCardAiSubtasks } from './aiAssist';
+import {
+  handleBoardAiPrioritize,
+  handleBoardAiNextTask,
+  handleBoardAiListInsights,
+  handleCardAiSubtasks,
+} from './aiAssist';
 import { broadcastBoardEvent } from './boardSync';
 import { notifyBoardDeletedExpoPush } from './boardExpoPush';
 import { validateEmail } from './lib/auth/password';
@@ -1084,6 +1089,11 @@ export async function handleBoards(request: Request, env: Env, pathname: string)
 
   if (segments.length === 4 && segments[2] === 'ai' && segments[3] === 'next-task' && method === 'POST') {
     const resp = await handleBoardAiNextTask(request, env, boardId);
+    if (resp) return resp;
+  }
+
+  if (segments.length === 4 && segments[2] === 'ai' && segments[3] === 'list-insights' && method === 'POST') {
+    const resp = await handleBoardAiListInsights(request, env, boardId);
     if (resp) return resp;
   }
 

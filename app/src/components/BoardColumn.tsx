@@ -28,6 +28,7 @@ export interface BoardColumnProps {
   title: string;
   cards: BoardCardData[];
   onAddCard?: () => void;
+  onAiPress?: () => void;
   addCardComposerOpen?: boolean;
   addCardComposerValue?: string;
   onAddCardComposerChangeText?: (text: string) => void;
@@ -81,6 +82,7 @@ function BoardColumnInner({
   title,
   cards,
   onAddCard,
+  onAiPress,
   addCardComposerOpen = false,
   addCardComposerValue = '',
   onAddCardComposerChangeText,
@@ -330,10 +332,26 @@ function BoardColumnInner({
             </View>
           </View>
         ) : (
-          <TouchableOpacity activeOpacity={0.8} onPress={handleAddCard} style={styles.addCard}>
-            <Feather name="plus" size={18} color={colors.iconChevron} />
-            <Text style={styles.addCardText}>Add card</Text>
-          </TouchableOpacity>
+          <View style={styles.footerRow}>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleAddCard} style={styles.addCard}>
+              <Feather name="plus" size={18} color={colors.iconChevron} />
+              <Text style={styles.addCardText}>Add card</Text>
+            </TouchableOpacity>
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                onAiPress?.();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`AI actions for ${title}`}
+              style={({ pressed }) => [styles.aiFooterButton, pressed && styles.aiFooterButtonPressed]}
+            >
+              <View style={styles.aiIconCircle}>
+                <Feather name="cpu" size={14} color={colors.textPrimary} />
+              </View>
+              <Text style={styles.aiFooterLabel}>AI</Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </Animated.View>
@@ -389,16 +407,53 @@ function createBoardColumnStyles(colors: ThemeColors) {
     addCard: {
       flexDirection: 'row',
       alignItems: 'center',
+      flex: 1,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
       gap: 8,
-      marginTop: 4,
     },
     addCardText: {
       fontSize: 14,
       color: colors.textSecondary,
       fontWeight: '500',
+    },
+    footerRow: {
+      marginTop: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    aiFooterButton: {
+      width: 42,
+      minHeight: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+      marginRight: 2,
+      marginBottom: 2,
+    },
+    aiFooterButtonPressed: {
+      opacity: 0.92,
+    },
+    aiIconCircle: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aiFooterLabel: {
+      fontSize: 10,
+      lineHeight: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      letterSpacing: 0.2,
+      textAlign: 'center',
     },
     composer: {
       marginTop: 4,

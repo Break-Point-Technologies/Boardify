@@ -1,4 +1,4 @@
-# Boardify (BetterBoardify)
+# Boardify
 
 Monorepo for **Boardify**: a collaborative board / task app built with **Expo (React Native)** for iOS, Android, and web, backed by a **Cloudflare Workers** API, **D1**, **R2**, and related Cloudflare primitives.
 

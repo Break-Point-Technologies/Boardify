@@ -196,14 +196,92 @@ export async function handleBoardAiNextTask(
   }
   const compact = cards.map(compactCardLine);
   const system =
-    'Pick ONE task id the user should do next. Reply ONLY JSON: {"cardId":"…"|null,"reason":"short string"}. ' +
-    'Prefer nearest due dates and small urgent-looking titles.';
+    'Pick ONE task id the user should do next. Reply ONLY JSON: {"cardId":"…"|null,"reason":"short string","subtasks":["..."]}. ' +
+    'Prefer nearest due dates and small urgent-looking titles. If there is enough information, include 3-6 concrete subtasks.';
   const user = JSON.stringify({ cards: compact, viewerUserId: r.userId });
   try {
-    const out = (await runLlmJson(env, system, user, 256)) as { cardId?: string | null; reason?: string };
+    const out = (await runLlmJson(env, system, user, 420)) as {
+      cardId?: string | null;
+      reason?: string;
+      subtasks?: string[];
+    };
     const cardId = typeof out.cardId === 'string' ? out.cardId : null;
     const reason = typeof out.reason === 'string' ? out.reason.slice(0, 280) : '';
-    return jsonResponse(request, { cardId, reason });
+    const subtasks = Array.isArray(out.subtasks)
+      ? out.subtasks
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .slice(0, 8)
+      : [];
+    return jsonResponse(request, { cardId, reason, subtasks });
+  } catch (e) {
+    return jsonResponse(
+      request,
+      { error: e instanceof Error ? e.message : 'AI failed' },
+      { status: 502 }
+    );
+  }
+}
+
+export async function handleBoardAiListInsights(
+  request: Request,
+  env: Env,
+  boardId: string
+): Promise<Response | null> {
+  if (request.method !== 'POST') return null;
+  const r = await requireBoardAccess(request, env, boardId);
+  if (r instanceof Response) return r;
+  if (!roleAtLeast(r.role, 'member')) {
+    return jsonResponse(request, { error: 'Forbidden' }, { status: 403 });
+  }
+  if (!(await tryConsumeAiSlot(env, r.userId))) {
+    return jsonResponse(request, { error: 'Daily AI limit reached' }, { status: 429 });
+  }
+  let body: { listIds?: string[]; maxCards?: number } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    body = {};
+  }
+  const maxCards = Math.min(80, Math.max(8, typeof body.maxCards === 'number' ? body.maxCards : 40));
+  const cards = await loadBoardCards(env, boardId, body.listIds, maxCards);
+  if (!cards.length) {
+    return jsonResponse(request, {
+      summary: 'No cards to analyze yet.',
+      wins: [],
+      risks: [],
+      suggestions: [],
+    });
+  }
+  const compact = cards.map(compactCardLine);
+  const system =
+    'You analyze board list health for one person. Reply ONLY JSON: ' +
+    '{"summary":"short","wins":["..."],"risks":["..."],"suggestions":["..."]}. ' +
+    'Use 2-4 concise bullets per array. Keep each bullet under 110 chars and highly actionable.';
+  const user = JSON.stringify({ cards: compact, viewerUserId: r.userId });
+  try {
+    const out = (await runLlmJson(env, system, user, 600)) as {
+      summary?: string;
+      wins?: string[];
+      risks?: string[];
+      suggestions?: string[];
+    };
+    const clean = (x: unknown) =>
+      Array.isArray(x)
+        ? x
+            .filter((v) => typeof v === 'string')
+            .map((v) => v.trim().slice(0, 120))
+            .filter(Boolean)
+            .slice(0, 6)
+        : [];
+    const summary = typeof out.summary === 'string' ? out.summary.trim().slice(0, 220) : '';
+    return jsonResponse(request, {
+      summary: summary || 'AI analyzed your current list state.',
+      wins: clean(out.wins),
+      risks: clean(out.risks),
+      suggestions: clean(out.suggestions),
+    });
   } catch (e) {
     return jsonResponse(
       request,
